@@ -4,7 +4,7 @@
     {
       "name": "mcrpc-guideline",
       "runtimeExecutable": "/Users/hh667/.bun/bin/bun",
-      "runtimeArgs": ["--cwd", "/Users/hh667/workspace/lisr/mcrpc-guideline", "run", "dev", "--port", "5199"],
+      "runtimeArgs": ["run", "dev", "--", "--port", "5199"],
       "port": 5199
     }
   ]
