@@ -56,6 +56,14 @@ bun run dev
 
 App runs at `http://localhost:5173` by default.
 
+Production builds use a relative asset base (`./`) and hash routing, so the app can be served from a subdirectory such as GitLab Pages without server-side route rewrites.
+
+## URL Structure
+
+- `#/` — All Pathways interactive pathway map
+- `#/classic` — Classic View overview with all four pathways
+- `#/classic/:guidelineId` — Classic View for an individual pathway, for example `#/classic/adt-arpi`
+
 ## Data
 
 All guideline content lives in:

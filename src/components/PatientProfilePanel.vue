@@ -32,7 +32,7 @@
           <button v-if="profile.hrr" class="clear-link" @click="profile.hrr = null">clear</button>
         </div>
         <template v-for="opt in PROFILE_OPTIONS.hrr" :key="opt.value">
-          <div v-if="opt.indent && !prevIsIndented(opt)" class="indent-marker">↳ HR Positive subtypes</div>
+          <div v-if="opt.indent && !prevIsIndented(opt)" class="indent-marker">↳ HRR Positive subtypes</div>
           <label class="radio-row" :class="{ indented: opt.indent }">
             <input type="radio" :value="opt.value" v-model="profile.hrr" />
             <span>{{ opt.label }}</span>
