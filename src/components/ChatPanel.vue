@@ -2,8 +2,7 @@
   <aside class="chat-panel" aria-label="Guideline chat">
     <header class="chat-header">
       <div>
-        <span class="chat-kicker">Guideline Chat</span>
-        <h2>Ask about this pathway</h2>
+        <h2>Ask anything</h2>
       </div>
       <div class="chat-header-actions">
         <span class="chat-status">Ready</span>
@@ -138,16 +137,6 @@ defineExpose({ focusComposer })
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-}
-
-.chat-kicker {
-  display: block;
-  margin-bottom: 5px;
-  color: #64748b;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .chat-header h2 {

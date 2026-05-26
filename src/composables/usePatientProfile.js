@@ -2,6 +2,7 @@ import { ref, computed, watch } from 'vue'
 
 const STORAGE_KEY        = 'mcrpc_patient_profile'
 const SAVED_PROFILES_KEY = 'mcrpc_saved_profiles'
+const MAX_SAVED_PROFILES = 10
 
 // ── Profile schema ───────────────────────────────────────────────
 const PROFILE_DEFAULTS = {
@@ -144,7 +145,7 @@ function saveCurrentProfile(name) {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   })
   const entry = { id: Date.now(), label, snapshot: { ...profile.value, special: [...profile.value.special] } }
-  savedProfiles.value = [entry, ...savedProfiles.value].slice(0, 10)
+  savedProfiles.value = [entry, ...savedProfiles.value].slice(0, MAX_SAVED_PROFILES)
   localStorage.setItem(SAVED_PROFILES_KEY, JSON.stringify(savedProfiles.value))
 }
 
@@ -155,6 +156,11 @@ function loadSavedProfile(id) {
 
 function deleteSavedProfile(id) {
   savedProfiles.value = savedProfiles.value.filter(p => p.id !== id)
+  localStorage.setItem(SAVED_PROFILES_KEY, JSON.stringify(savedProfiles.value))
+}
+
+function clearSavedProfiles() {
+  savedProfiles.value = []
   localStorage.setItem(SAVED_PROFILES_KEY, JSON.stringify(savedProfiles.value))
 }
 
@@ -205,5 +211,6 @@ export function usePatientProfile() {
     saveCurrentProfile,
     loadSavedProfile,
     deleteSavedProfile,
+    clearSavedProfiles,
   }
 }
