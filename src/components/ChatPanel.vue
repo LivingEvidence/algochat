@@ -5,6 +5,7 @@
         <h2>Ask anything</h2>
       </div>
       <div class="chat-header-actions">
+        <button type="button" class="chat-new" @click="startNewChat">New Chat</button>
         <span class="chat-status">Ready</span>
         <button type="button" class="chat-close" title="Close chat panel" aria-label="Close chat panel" @click="$emit('close')">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -66,13 +67,25 @@ defineEmits(['close'])
 const draft = ref('')
 const composerInput = ref(null)
 const messageList = ref(null)
+const initialMessage = {
+  id: 1,
+  role: 'assistant',
+  text: 'Ask a question about the current profile, a biomarker branch, or a treatment option. I can use the flowchart state as context.',
+}
 const messages = ref([
-  {
-    id: 1,
-    role: 'assistant',
-    text: 'Ask a question about the current profile, a biomarker branch, or a treatment option. I can use the flowchart state as context.',
-  },
+  initialMessage,
 ])
+
+function startNewChat() {
+  draft.value = ''
+  messages.value = [
+    {
+      ...initialMessage,
+      id: Date.now(),
+    },
+  ]
+  focusComposer()
+}
 
 const suggestedPrompts = [
   'Which options match this profile?',
@@ -155,6 +168,26 @@ defineExpose({ focusComposer })
   font-size: 10px;
   font-weight: 800;
   padding: 3px 8px;
+}
+
+.chat-new {
+  flex-shrink: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 8px 10px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.chat-new:hover {
+  border-color: #60a5fa;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .chat-close {
