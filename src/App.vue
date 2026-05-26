@@ -43,7 +43,7 @@ body { margin: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; backg
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 12px;
   height: 52px;
   background: #1e3a5f;
   color: #fff;
@@ -107,10 +107,6 @@ body { margin: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; backg
 }
 
 @media (max-width: 640px) {
-  .topbar {
-    padding: 0 12px;
-  }
-
   .logo-text {
     font-size: 15px;
   }
