@@ -17,6 +17,7 @@
           <span>Set treatment history and biomarkers.</span>
         </span>
       </button>
+      <div class="tool-divider" aria-hidden="true"></div>
       <button
         type="button"
         class="tool-btn"
@@ -49,6 +50,7 @@
           <span>Review prior chat sessions.</span>
         </span>
       </button>
+      <div class="tool-divider" aria-hidden="true"></div>
       <button
         type="button"
         class="tool-btn"
@@ -713,6 +715,13 @@ const computedEdges = computed(() => {
 }
 .tool-spacer {
   flex: 1;
+}
+.tool-divider {
+  width: 24px;
+  height: 1px;
+  flex: 0 0 auto;
+  margin: 2px 0;
+  background: #dbe4ee;
 }
 .flowchart-panel {
   position: relative;
