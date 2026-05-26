@@ -1,5 +1,106 @@
 <template>
   <div class="tri-view">
+    <nav class="flow-toolbar" aria-label="Flowchart tools">
+      <button
+        type="button"
+        class="tool-btn"
+        :class="{ active: activeTool === 'chat' }"
+        title="Chat"
+        aria-label="Chat"
+        @click="activateTool('chat')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-7a8 8 0 1 1 18-4Z" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="tool-btn"
+        :class="{ active: activeTool === 'history' }"
+        title="History"
+        aria-label="History"
+        @click="activateTool('history')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 3-6.7" />
+          <path d="M3 4v5h5" />
+          <path d="M12 7v6l4 2" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="tool-btn"
+        :class="{ active: activeTool === 'profile' }"
+        title="Patient profile"
+        aria-label="Patient profile"
+        @click="activateTool('profile')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 21a8 8 0 0 0-16 0" />
+          <circle cx="12" cy="8" r="4" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="tool-btn"
+        :class="{ active: activeTool === 'evidence' }"
+        title="Evidence"
+        aria-label="Evidence"
+        @click="activateTool('evidence')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 3h9l3 3v15H6Z" />
+          <path d="M14 3v4h4" />
+          <path d="M9 12h6" />
+          <path d="M9 16h6" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="tool-btn"
+        :class="{ active: activeTool === 'sources' }"
+        title="Guideline sources"
+        aria-label="Guideline sources"
+        @click="activateTool('sources')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+        </svg>
+      </button>
+      <div class="tool-spacer"></div>
+      <button
+        type="button"
+        class="tool-btn"
+        :class="{ active: activeTool === 'settings' }"
+        title="System settings"
+        aria-label="System settings"
+        @click="activateTool('settings')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z" />
+          <path d="m19.4 15 .3 2.3-2.1 1.2-1.9-1.4a7.7 7.7 0 0 1-1.8.8L13.5 20h-3l-.4-2.1a7.7 7.7 0 0 1-1.8-.8l-1.9 1.4-2.1-1.2.3-2.3a7.2 7.2 0 0 1-.9-1.6L1.7 12l2-1.4c.2-.6.5-1.1.9-1.6l-.3-2.3 2.1-1.2 1.9 1.4c.6-.3 1.2-.6 1.8-.8L10.5 4h3l.4 2.1c.6.2 1.2.5 1.8.8l1.9-1.4 2.1 1.2-.3 2.3c.4.5.7 1 .9 1.6l2 1.4-2 1.4c-.2.6-.5 1.1-.9 1.6Z" />
+        </svg>
+      </button>
+    </nav>
+
+    <ChatPanel v-if="activeTool === 'chat'" ref="chatPanel" @close="closeToolPanel" />
+    <aside v-else-if="activeToolMeta" class="tool-panel" :aria-label="activeToolMeta.label">
+      <header class="tool-panel-header">
+        <span class="tool-panel-kicker">{{ activeToolMeta.kicker }}</span>
+        <h2>{{ activeToolMeta.label }}</h2>
+        <button type="button" class="tool-panel-close" :title="`Close ${activeToolMeta.label}`" :aria-label="`Close ${activeToolMeta.label}`" @click="closeToolPanel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+      <div class="tool-panel-body">
+        <p>{{ activeToolMeta.description }}</p>
+      </div>
+    </aside>
+
     <section class="flowchart-panel" aria-label="All pathways flowchart">
       <!-- Hint when nothing selected -->
       <transition name="fade">
@@ -110,6 +211,7 @@ import CondNode           from '../components/nodes/CondNode.vue'
 import TreatNode          from '../components/nodes/TreatNode.vue'
 import SectionLabelNode   from '../components/nodes/SectionLabelNode.vue'
 import PatientProfilePanel from '../components/PatientProfilePanel.vue'
+import ChatPanel from '../components/ChatPanel.vue'
 
 import { buildTriColumnNodes, EDGE_RULES, TREATMENT_ITEMS } from '../data/triColumn.js'
 import { PRIOR_WITH_DOCETAXEL, usePatientProfile } from '../composables/usePatientProfile.js'
@@ -118,6 +220,8 @@ import { PRIOR_WITH_DOCETAXEL, usePatientProfile } from '../composables/usePatie
 const hoveredNodeId = ref(null)
 const selectedTreatmentId = ref(null)
 const flowInstance = ref(null)
+const chatPanel = ref(null)
+const activeTool = ref('chat')
 const BASE_NODES    = buildTriColumnNodes()
 
 const { profile, selectedPriorId, selectedCondIds, toggleCondById } = usePatientProfile()
@@ -153,6 +257,36 @@ const treatmentCategoryLabel = computed(() =>
   CATEGORY_LABELS[selectedTreatment.value?.cat] || 'Treatment option'
 )
 
+const TOOL_META = {
+  history: {
+    kicker: 'Session History',
+    label: 'Chat history',
+    description: 'Conversation history and prior guideline questions will appear here.',
+  },
+  profile: {
+    kicker: 'Patient Context',
+    label: 'Profile tools',
+    description: 'Profile summaries, saved profiles, and comparison tools can live in this panel.',
+  },
+  evidence: {
+    kicker: 'Evidence',
+    label: 'Evidence review',
+    description: 'Selected treatment evidence and citations can be surfaced here without covering the flowchart.',
+  },
+  sources: {
+    kicker: 'Guidelines',
+    label: 'Guideline sources',
+    description: 'Source documents, version notes, and citation links can be managed from this panel.',
+  },
+  settings: {
+    kicker: 'System',
+    label: 'System settings',
+    description: 'Model behavior, context scope, privacy controls, and UI preferences can be configured here.',
+  },
+}
+
+const activeToolMeta = computed(() => activeTool.value ? TOOL_META[activeTool.value] : null)
+
 // ── Selection handlers ───────────────────────────────────────────
 function selectPrior(id) {
   const key = PRIOR_NODE_TO_KEY[id]
@@ -186,6 +320,23 @@ function onPaneReady(instance) {
 function closeEvidencePanel() {
   selectedTreatmentId.value = null
   refitFlowchart()
+}
+
+async function activateTool(tool) {
+  if (activeTool.value === tool) {
+    activeTool.value = null
+    return
+  }
+
+  activeTool.value = tool
+  if (tool === 'chat') {
+    await nextTick()
+    chatPanel.value?.focusComposer?.()
+  }
+}
+
+function closeToolPanel() {
+  activeTool.value = null
 }
 
 async function refitFlowchart() {
@@ -332,6 +483,131 @@ const computedEdges = computed(() => {
   position: relative;
   min-width: 0;
   background: #f0f4f8;
+}
+.flow-toolbar {
+  width: 3rem;
+  flex: 0 0 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 6px;
+  background: #ffffff;
+  border-right: 1px solid #dbe4ee;
+  z-index: 11;
+}
+.tool-panel {
+  width: clamp(300px, 28vw, 390px);
+  flex: 0 0 clamp(300px, 28vw, 390px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fbfcfe;
+  border-right: 1px solid #dbe4ee;
+  box-shadow: 8px 0 24px rgba(15, 23, 42, 0.06);
+  z-index: 12;
+}
+.tool-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+.tool-panel-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tool-panel-header h2 {
+  margin: 0;
+  color: #1e3a5f;
+  font-size: 17px;
+  line-height: 1.25;
+}
+.tool-panel-close {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.tool-panel-close:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.tool-panel-close svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+.tool-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+.tool-panel-body p {
+  margin: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 12px;
+}
+.tool-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+.tool-btn:hover,
+.tool-btn.active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.tool-btn:active {
+  transform: translateY(1px);
+}
+.tool-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+.tool-spacer {
+  flex: 1;
 }
 .flowchart-panel {
   position: relative;
@@ -480,6 +756,35 @@ const computedEdges = computed(() => {
   .evidence-panel {
     width: 360px;
     flex-basis: 360px;
+  }
+
+  .tool-panel {
+    width: 300px;
+    flex-basis: 300px;
+  }
+}
+
+@media (max-width: 760px) {
+  .flow-toolbar {
+    width: 2.75rem;
+    flex-basis: 2.75rem;
+    padding-inline: 4px;
+  }
+
+  .tool-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .tool-panel {
+    width: 280px;
+    flex-basis: 280px;
+  }
+
+  .hint-banner {
+    max-width: calc(100% - 32px);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 </style>
