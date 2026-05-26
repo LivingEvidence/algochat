@@ -45,7 +45,7 @@
         id="guideline-chat-input"
         ref="composerInput"
         v-model="draft"
-        rows="1"
+        rows="3"
         placeholder="Ask about options, biomarkers, or the selected profile..."
         @keydown.enter.exact.prevent="sendMessage"
       ></textarea>
@@ -301,7 +301,7 @@ defineExpose({ focusComposer })
 
 .chat-composer textarea {
   width: 100%;
-  min-height: 40px;
+  min-height: 72px;
   max-height: 118px;
   resize: vertical;
   border: 1px solid #cbd5e1;
