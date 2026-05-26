@@ -3,7 +3,15 @@
     <header class="topbar">
       <div class="topbar-left">
         <img class="logo-icon" :src="`${baseUrl}logo.svg`" alt="" />
-        <span class="logo-text">mCRPC Algorithm</span>
+        <div class="logo-copy">
+          <span class="logo-text">
+            mCRPC Algorithm
+            <span class="logo-badge">Beta</span>
+          </span>
+          <span class="logo-subtitle">
+            Systemic Therapy in Patients With mCRPC: ASCO Living Guideline, Version 2026.1
+          </span>
+        </div>
       </div>
 
       <nav class="topbar-nav" aria-label="Primary navigation">
@@ -55,6 +63,7 @@ body { margin: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; backg
   display: flex;
   align-items: center;
   gap: 9px;
+  min-width: 0;
 }
 
 .logo-icon {
@@ -62,19 +71,59 @@ body { margin: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; backg
   height: 24px;
   display: block;
   flex-shrink: 0;
+  filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+}
+
+.logo-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.05;
 }
 
 .logo-text {
+  display: inline-flex;
+  align-items: flex-start;
+  min-width: 0;
   font-size: 17px;
   font-weight: 800;
   letter-spacing: 0.05em;
-  color: #93c5fd;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+.logo-badge {
+  margin-left: 5px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 6.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  transform: translateY(-0.2em);
+  white-space: nowrap;
+}
+
+.logo-subtitle {
+  margin-top: 2px;
+  max-width: 680px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
 }
 
 .topbar-nav {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .nav-btn {
@@ -109,6 +158,15 @@ body { margin: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; backg
 @media (max-width: 640px) {
   .logo-text {
     font-size: 15px;
+  }
+
+  .logo-badge {
+    font-size: 5.8px;
+  }
+
+  .logo-subtitle {
+    max-width: 48vw;
+    font-size: 7.5px;
   }
 }
 </style>
