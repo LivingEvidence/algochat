@@ -14,12 +14,12 @@
         </div>
       </div>
 
-      <nav class="topbar-nav" aria-label="Primary navigation">
-        <RouterLink class="nav-btn" :to="{ name: 'all-pathways' }">
-          All Pathways
-        </RouterLink>
-        <RouterLink class="nav-btn overview-btn" :to="{ name: 'classic-overview' }">
-          Classic View
+      <nav class="topbar-tabs" aria-label="Primary navigation">
+        <RouterLink v-for="tab in primaryTabs" :key="tab.name" class="topbar-tab" :to="{ name: tab.name }">
+          <svg class="topbar-tab-icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path :d="tab.icon" />
+          </svg>
+          <span>{{ tab.label }}</span>
         </RouterLink>
       </nav>
     </header>
@@ -32,6 +32,19 @@
 import { RouterLink, RouterView } from 'vue-router'
 
 const baseUrl = import.meta.env.BASE_URL
+
+const primaryTabs = [
+  {
+    name: 'all-pathways',
+    label: 'All Pathways',
+    icon: 'M4.5 3.5a2 2 0 1 1 2 2h-.75v2.2c0 .44.36.8.8.8h6.9a2.8 2.8 0 0 1 2.8 2.8v3.2h.75a2 2 0 1 1-2 0v-3.2c0-.44-.36-.8-.8-.8h-3.45v4h.75a2 2 0 1 1-2 0v-4H6.55a2.8 2.8 0 0 1-2.8-2.8V5.5H3a2 2 0 0 1 1.5-2z',
+  },
+  {
+    name: 'classic-overview',
+    label: 'Classic View',
+    icon: 'M4 4.5A1.5 1.5 0 0 1 5.5 3h9A1.5 1.5 0 0 1 16 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 15.5v-11zm2 2v2h8v-2H6zm0 4v1.5h8v-1.5H6zm0 3.5v1h5v-1H6z',
+  },
+]
 </script>
 
 <style>
@@ -119,33 +132,52 @@ body { margin: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; backg
   white-space: nowrap;
 }
 
-.topbar-nav {
+.topbar-tabs {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-shrink: 0;
+  padding: 3px;
+  border: 1px solid rgba(203, 213, 225, 0.24);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.22);
 }
 
-.nav-btn {
+.topbar-tab {
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   justify-content: center;
+  min-height: 30px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   background: transparent;
-  border: 1px solid #475569;
-  color: #cbd5e1;
-  padding: 5px 14px;
-  border-radius: 20px;
+  color: rgba(226, 232, 240, 0.86);
   font-size: 12.5px;
+  font-weight: 700;
   text-decoration: none;
-  cursor: pointer;
-  transition: all 0.15s;
+  white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
-.nav-btn:hover,
-.nav-btn.router-link-active {
-  background: #2563eb;
-  border-color: #2563eb;
+.topbar-tab-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  fill: currentColor;
+}
+
+.topbar-tab:hover {
+  border-color: rgba(203, 213, 225, 0.34);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
+}
+
+.topbar-tab.router-link-active {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #1e3a5f;
 }
 
 .main-content {
@@ -167,6 +199,11 @@ body { margin: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; backg
   .logo-subtitle {
     max-width: 48vw;
     font-size: 7.5px;
+  }
+
+  .topbar-tab {
+    padding: 6px 9px;
+    font-size: 12px;
   }
 }
 </style>
