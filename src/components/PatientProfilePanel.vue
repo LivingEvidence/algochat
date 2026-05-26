@@ -70,7 +70,7 @@
           <span class="section-label">Special Situations</span>
           <button v-if="profile.special.length" class="clear-link" @click="profile.special = []">clear</button>
         </div>
-        <label v-for="opt in PROFILE_OPTIONS.special" :key="opt.value" class="check-row">
+        <label v-for="opt in visibleSpecialOptions" :key="opt.value" class="check-row">
           <input type="checkbox" :value="opt.value" v-model="profile.special" />
           <span>{{ opt.label }}</span>
         </label>
@@ -91,7 +91,6 @@
           class="saved-item"
           @click="loadSavedProfile(sp.id)"
         >
-          <div class="saved-item-label">{{ sp.label }}</div>
           <div class="saved-item-summary">{{ summarize(sp.snapshot) }}</div>
           <button class="saved-delete" @click.stop="deleteSavedProfile(sp.id)">✕</button>
         </div>
@@ -102,8 +101,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { usePatientProfile, PROFILE_OPTIONS } from '../composables/usePatientProfile.js'
+import { computed, ref } from 'vue'
+import { usePatientProfile, PROFILE_OPTIONS, PRIOR_WITH_DOCETAXEL } from '../composables/usePatientProfile.js'
 
 const {
   profile, selectedCondIds, resetProfile,
@@ -111,6 +110,12 @@ const {
 } = usePatientProfile()
 
 const collapsed = ref(false)
+
+const visibleSpecialOptions = computed(() =>
+  PROFILE_OPTIONS.special.filter(opt =>
+    opt.value !== 'doc_eligible' || !PRIOR_WITH_DOCETAXEL.has(profile.value.prior)
+  )
+)
 
 function prevIsIndented(opt) {
   const opts = PROFILE_OPTIONS.hrr
@@ -125,7 +130,8 @@ function summarize(snap) {
   if (snap.hrr)     parts.push(snap.hrr.replace(/_/g, ' '))
   if (snap.psma)    parts.push('PSMA ' + snap.psma)
   if (snap.msi)     parts.push('MSI ' + snap.msi)
-  snap.special?.forEach(s => parts.push(s))
+  const specialMap = { doc_eligible: 'Doc eligible' }
+  snap.special?.forEach(s => parts.push(specialMap[s] || s))
   return parts.join(' · ') || 'Empty profile'
 }
 </script>
@@ -222,8 +228,7 @@ function summarize(snap) {
   margin-bottom: 5px; cursor: pointer; position: relative;
 }
 .saved-item:hover { background: #eff6ff; border-color: #bfdbfe; }
-.saved-item-label { font-size: 11px; font-weight: 600; color: #1e3a5f; flex: 1; }
-.saved-item-summary { font-size: 10px; color: #64748b; line-height: 1.4; flex: 1; }
+.saved-item-summary { font-size: 10px; color: #64748b; line-height: 1.4; flex: 1; padding-right: 14px; }
 .saved-delete {
   font-size: 10px; color: #cbd5e1; background: none; border: none;
   cursor: pointer; padding: 0 2px; flex-shrink: 0; margin-top: 1px;

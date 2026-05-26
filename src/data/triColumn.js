@@ -58,10 +58,10 @@ export const BIOMARKER_GROUPS = [
 
 // Special situations — each becomes its own standalone node
 export const SPECIAL_ITEMS = [
-  { id: 'n2-oligo',    label: 'Oligometastatic disease' },
-  { id: 'n2-indolent', label: 'Indolent disease' },
-  { id: 'n2-bone',     label: 'Bone only, symptomatic' },
-  { id: 'n2-no-doc',   label: 'Ineligible for docetaxel' },
+  { id: 'n2-oligo',        label: 'Oligometastatic disease' },
+  { id: 'n2-indolent',     label: 'Indolent disease' },
+  { id: 'n2-bone',         label: 'Bone only, symptomatic' },
+  { id: 'n2-doc-eligible', label: 'Eligible for docetaxel' },
 ]
 
 export const TREATMENT_ITEMS = [
@@ -98,6 +98,7 @@ export const EDGE_RULES = {
     { from: 'n2-oligo',       to: 'n3-rt-surgery' },
     { from: 'n2-indolent',    to: 'n3-sipuleucel' },
     { from: 'n2-bone',        to: 'n3-ra223' },
+    { from: 'n2-doc-eligible', to: 'n3-docetaxel' },
   ],
   'n1-adt-doc': [
     { from: 'n2-brca',        to: 'n3-talazo-enza' },
@@ -123,7 +124,7 @@ export const EDGE_RULES = {
     { from: 'n2-oligo',       to: 'n3-rt-surgery' },
     { from: 'n2-indolent',    to: 'n3-sipuleucel' },
     { from: 'n2-bone',        to: 'n3-ra223' },
-    { from: 'n2-no-doc',      to: 'n3-cabazi' },
+    { from: 'n2-doc-eligible', to: 'n3-docetaxel' },
   ],
   'n1-adt-arpi-doc': [
     { from: 'n2-psma-pos',    to: 'n3-lu-psma' },

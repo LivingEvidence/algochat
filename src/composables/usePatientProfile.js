@@ -9,7 +9,7 @@ const PROFILE_DEFAULTS = {
   hrr: null,          // 'hrr_pos_general' | 'brca_pos' | 'non_brca_hrr_pos' | 'hrr_neg'
   psma: null,         // 'pos' | 'neg'
   msi: null,          // 'present' | 'absent'
-  special: [],        // array: 'oligo' | 'indolent' | 'bone' | 'no_doc'
+  special: [],        // array: 'oligo' | 'indolent' | 'bone' | 'doc_eligible'
 }
 
 // ── Prior value → priorNode ID ───────────────────────────────────
@@ -19,6 +19,8 @@ export const PRIOR_MAP = {
   adt_arpi:     'n1-adt-arpi',
   adt_arpi_doc: 'n1-adt-arpi-doc',
 }
+
+export const PRIOR_WITH_DOCETAXEL = new Set(['adt_doc', 'adt_arpi_doc'])
 
 // ── Profile value → condNode ID mapping ──────────────────────────
 const PROFILE_TO_COND = {
@@ -37,10 +39,10 @@ const PROFILE_TO_COND = {
     absent:  'n2-msi-absent',
   },
   special: {
-    oligo:    'n2-oligo',
-    indolent: 'n2-indolent',
-    bone:     'n2-bone',
-    no_doc:   'n2-no-doc',
+    oligo:        'n2-oligo',
+    indolent:     'n2-indolent',
+    bone:         'n2-bone',
+    doc_eligible: 'n2-doc-eligible',
   },
 }
 
@@ -67,10 +69,10 @@ export const PROFILE_OPTIONS = {
     { value: 'absent',  label: 'MSI-H / dMMR absent' },
   ],
   special: [
-    { value: 'oligo',    label: 'Oligometastatic disease' },
-    { value: 'indolent', label: 'Indolent disease' },
-    { value: 'bone',     label: 'Bone only, symptomatic' },
-    { value: 'no_doc',   label: 'Ineligible for docetaxel' },
+    { value: 'oligo',        label: 'Oligometastatic disease' },
+    { value: 'indolent',     label: 'Indolent disease' },
+    { value: 'bone',         label: 'Bone only, symptomatic' },
+    { value: 'doc_eligible', label: 'Eligible for docetaxel' },
   ],
 }
 
@@ -78,9 +80,21 @@ export const PROFILE_OPTIONS = {
 function loadSaved() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...PROFILE_DEFAULTS, ...JSON.parse(raw) }
+    if (raw) return normalizeProfile(JSON.parse(raw))
   } catch {}
   return { ...PROFILE_DEFAULTS, special: [] }
+}
+
+function normalizeProfile(saved) {
+  const merged = { ...PROFILE_DEFAULTS, ...saved }
+  const special = Array.isArray(merged.special) ? merged.special : []
+  merged.special = special
+    .map(value => value === 'no_doc' ? 'doc_eligible' : value)
+    .filter((value, index, arr) => arr.indexOf(value) === index)
+  if (PRIOR_WITH_DOCETAXEL.has(merged.prior)) {
+    merged.special = merged.special.filter(value => value !== 'doc_eligible')
+  }
+  return merged
 }
 
 const profile = ref(loadSaved())
@@ -88,6 +102,14 @@ const profile = ref(loadSaved())
 watch(profile, val => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
 }, { deep: true })
+
+watch(() => profile.value.prior, prior => {
+  if (!PRIOR_WITH_DOCETAXEL.has(prior) || !profile.value.special.includes('doc_eligible')) return
+  profile.value = {
+    ...profile.value,
+    special: profile.value.special.filter(value => value !== 'doc_eligible'),
+  }
+})
 
 // ── Derived: prior node ID ───────────────────────────────────────
 const selectedPriorId = computed(() =>
@@ -128,7 +150,7 @@ function saveCurrentProfile(name) {
 
 function loadSavedProfile(id) {
   const entry = savedProfiles.value.find(p => p.id === id)
-  if (entry) profile.value = { ...entry.snapshot, special: [...(entry.snapshot.special || [])] }
+  if (entry) profile.value = normalizeProfile(entry.snapshot)
 }
 
 function deleteSavedProfile(id) {

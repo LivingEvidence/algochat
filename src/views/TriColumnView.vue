@@ -69,7 +69,7 @@ import SectionLabelNode   from '../components/nodes/SectionLabelNode.vue'
 import PatientProfilePanel from '../components/PatientProfilePanel.vue'
 
 import { buildTriColumnNodes, EDGE_RULES } from '../data/triColumn.js'
-import { usePatientProfile } from '../composables/usePatientProfile.js'
+import { PRIOR_WITH_DOCETAXEL, usePatientProfile } from '../composables/usePatientProfile.js'
 
 // ── State ────────────────────────────────────────────────────────
 const hoveredNodeId = ref(null)
@@ -85,6 +85,10 @@ const PRIOR_NODE_TO_KEY = {
   'n1-adt': 'adt', 'n1-adt-doc': 'adt_doc',
   'n1-adt-arpi': 'adt_arpi', 'n1-adt-arpi-doc': 'adt_arpi_doc',
 }
+
+const selectedPriorHasDocetaxel = computed(() => {
+  return PRIOR_WITH_DOCETAXEL.has(profile.value.prior)
+})
 
 // ── Selection handlers ───────────────────────────────────────────
 function selectPrior(id) {
@@ -150,36 +154,38 @@ const hoverLinkedIds = computed(() => {
 
 // ── Computed nodes (with active/dimmed state) ────────────────────
 const computedNodes = computed(() =>
-  BASE_NODES.map(node => {
-    if (node.type === 'priorNode') {
-      return { ...node, data: { ...node.data, selected: node.id === selectedPrior.value } }
-    }
-    if (node.type === 'condNode') {
-      const hasSel = !!selectedPrior.value
-      const inPath = activeCondIds.value.has(node.id)
-      return { ...node, data: {
-        ...node.data,
-        state:          !hasSel ? 'default'
-                      : !inPath ? 'disabled'
-                      : selectedCondIds.value.has(node.id) ? 'matched'
-                      : 'potential',
-        hoverHighlight: hoverLinkedIds.value.has(node.id),
-      }}
-    }
-    if (node.type === 'treatNode') {
-      const hasSel = !!selectedPrior.value
-      const inPath = activeTreatIds.value.has(node.id)
-      return { ...node, data: {
-        ...node.data,
-        state:          !hasSel ? 'default'
-                      : !inPath ? 'disabled'
-                      : matchedTreatIds.value.has(node.id) ? 'matched'
-                      : 'potential',
-        hoverHighlight: hoverLinkedIds.value.has(node.id),
-      }}
-    }
-    return node
-  })
+  BASE_NODES
+    .filter(node => !(selectedPriorHasDocetaxel.value && node.id === 'n2-doc-eligible'))
+    .map(node => {
+      if (node.type === 'priorNode') {
+        return { ...node, data: { ...node.data, selected: node.id === selectedPrior.value } }
+      }
+      if (node.type === 'condNode') {
+        const hasSel = !!selectedPrior.value
+        const inPath = activeCondIds.value.has(node.id)
+        return { ...node, data: {
+          ...node.data,
+          state:          !hasSel ? 'default'
+                        : !inPath ? 'disabled'
+                        : selectedCondIds.value.has(node.id) ? 'matched'
+                        : 'potential',
+          hoverHighlight: hoverLinkedIds.value.has(node.id),
+        }}
+      }
+      if (node.type === 'treatNode') {
+        const hasSel = !!selectedPrior.value
+        const inPath = activeTreatIds.value.has(node.id)
+        return { ...node, data: {
+          ...node.data,
+          state:          !hasSel ? 'default'
+                        : !inPath ? 'disabled'
+                        : matchedTreatIds.value.has(node.id) ? 'matched'
+                        : 'potential',
+          hoverHighlight: hoverLinkedIds.value.has(node.id),
+        }}
+      }
+      return node
+    })
 )
 
 // ── Computed edges (appear only after selection) ─────────────────

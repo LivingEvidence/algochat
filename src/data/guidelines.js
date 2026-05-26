@@ -137,7 +137,7 @@ export const GUIDELINES = {
       { condition: 'Indolent disease (slow rising PSA, asymptomatic or low volume disease)', treatment: 'Sipuleucel-T' },
       { condition: 'Bone only, symptomatic', treatment: 'Radium 223' },
       { condition: 'PSMA-positive', treatment: '¹⁷⁷Lu-PSMA-617', biomarker: 'psma' },
-      { condition: 'Ineligible for docetaxel (neuropathy, edema, lung disease, etc.)', treatment: 'Cabazitaxel' },
+      { condition: 'Eligible for docetaxel', treatment: 'Docetaxel' },
     ],
   },
 
