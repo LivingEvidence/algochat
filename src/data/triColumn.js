@@ -210,7 +210,7 @@ export function buildTriColumnNodes() {
     id: 'g1', type: 'customGroup',
     position: { x: G1_X, y: G1_Y },
     style: { width: `${G1_W}px`, height: `${g1H}px` },
-    data: { label: 'Prior Treatment', num: '①', color: '#c8956c' },
+    data: { label: 'Prior Treatment', num: '', color: '#c8956c' },
     draggable: false, selectable: false, focusable: false,
   })
   PRIOR_ITEMS.forEach((item, i) => {
@@ -314,7 +314,7 @@ export function buildTriColumnNodes() {
     id: 'g3', type: 'customGroup',
     position: { x: G3_X, y: G3_Y },
     style: { width: `${G3_W}px`, height: `${g3H}px` },
-    data: { label: 'Treatment Options', num: '③', color: '#1e3a5f' },
+    data: { label: 'Treatment Options', num: '', color: '#1e3a5f' },
     draggable: false, selectable: false, focusable: false,
   })
   TREATMENT_ITEMS.forEach((item, i) => {
