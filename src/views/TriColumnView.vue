@@ -8,11 +8,6 @@
       </div>
     </transition>
 
-    <!-- MiniMap toggle -->
-    <button class="minimap-toggle" @click="showMiniMap = !showMiniMap" :title="showMiniMap ? 'Hide minimap' : 'Show minimap'">
-      {{ showMiniMap ? '⊟' : '⊞' }} Map
-    </button>
-
     <PatientProfilePanel />
 
     <VueFlow
@@ -31,8 +26,31 @@
       @node-mouse-leave="onNodeHoverEnd"
     >
       <Background pattern-color="#e2e8f0" :gap="24" />
-      <Controls />
-      <MiniMap v-if="showMiniMap" node-color="#b8cce4" />
+      <Controls>
+        <ControlButton
+          class="minimap-control"
+          :class="{ active: showMiniMap }"
+          :title="showMiniMap ? 'Hide minimap' : 'Show minimap'"
+          @click="showMiniMap = !showMiniMap"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M9 18.7 3.7 21A1 1 0 0 1 2.3 20V5.6a1 1 0 0 1 .6-.9L9 2.3l6 3 5.3-2.3A1 1 0 0 1 21.7 4v14.4a1 1 0 0 1-.6.9L15 21.7l-6-3Zm0-14.2v12M15 7.5v12"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            />
+          </svg>
+        </ControlButton>
+      </Controls>
+      <MiniMap
+        v-if="showMiniMap"
+        class="tri-minimap"
+        node-color="#b8cce4"
+        position="bottom-left"
+      />
 
       <template #node-customGroup="nodeProps">
         <GroupNode :data="nodeProps.data" />
@@ -58,7 +76,7 @@ import { ref, computed } from 'vue'
 
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
-import { Controls } from '@vue-flow/controls'
+import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 
 import GroupNode          from '../components/nodes/GroupNode.vue'
@@ -270,21 +288,14 @@ const computedEdges = computed(() => {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-/* MiniMap toggle */
-.minimap-toggle {
-  position: absolute;
-  bottom: 56px;
-  right: 16px;
-  z-index: 10;
-  background: rgba(255,255,255,0.92);
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 11px;
-  color: #64748b;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+.minimap-control {
+  color: #475569;
 }
-.minimap-toggle:hover { background: #f1f5f9; color: #1e3a5f; }
+.minimap-control.active {
+  color: #2563eb;
+  background: #eff6ff;
+}
+:deep(.tri-minimap) {
+  margin-left: 252px;
+}
 </style>
