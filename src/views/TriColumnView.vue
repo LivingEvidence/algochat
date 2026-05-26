@@ -1,78 +1,103 @@
 <template>
   <div class="tri-view">
+    <section class="flowchart-panel" aria-label="All pathways flowchart">
+      <!-- Hint when nothing selected -->
+      <transition name="fade">
+        <div class="hint-banner" v-if="!selectedPrior">
+          ← Select a prior treatment in the left panel to see applicable options
+        </div>
+      </transition>
 
-    <!-- Hint when nothing selected -->
-    <transition name="fade">
-      <div class="hint-banner" v-if="!selectedPrior">
-        ← Select a prior treatment in the left panel to see applicable options
+      <PatientProfilePanel />
+
+      <VueFlow
+        :nodes="computedNodes"
+        :edges="computedEdges"
+        :default-zoom="0.95"
+        :min-zoom="0.3"
+        :max-zoom="2"
+        fit-view-on-init
+        :nodes-draggable="false"
+        :nodes-connectable="false"
+        :elements-selectable="false"
+        class="tri-canvas"
+        @pane-ready="onPaneReady"
+        @node-click="onNodeClick"
+        @node-mouse-enter="onNodeHover"
+        @node-mouse-leave="onNodeHoverEnd"
+      >
+        <Background pattern-color="#e2e8f0" :gap="24" />
+        <Controls>
+          <ControlButton
+            class="minimap-control"
+            :class="{ active: showMiniMap }"
+            :title="showMiniMap ? 'Hide minimap' : 'Show minimap'"
+            @click="showMiniMap = !showMiniMap"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M9 18.7 3.7 21A1 1 0 0 1 2.3 20V5.6a1 1 0 0 1 .6-.9L9 2.3l6 3 5.3-2.3A1 1 0 0 1 21.7 4v14.4a1 1 0 0 1-.6.9L15 21.7l-6-3Zm0-14.2v12M15 7.5v12"
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+              />
+            </svg>
+          </ControlButton>
+        </Controls>
+        <MiniMap
+          v-if="showMiniMap"
+          class="tri-minimap"
+          node-color="#b8cce4"
+          position="bottom-left"
+        />
+
+        <template #node-customGroup="nodeProps">
+          <GroupNode :data="nodeProps.data" />
+        </template>
+        <template #node-priorNode="nodeProps">
+          <PriorNode :data="nodeProps.data" @select="selectPrior(nodeProps.id)" />
+        </template>
+        <template #node-condNode="nodeProps">
+          <CondNode :data="nodeProps.data" />
+        </template>
+        <template #node-treatNode="nodeProps">
+          <TreatNode :data="nodeProps.data" />
+        </template>
+        <template #node-sectionLabel="nodeProps">
+          <SectionLabelNode :data="nodeProps.data" />
+        </template>
+      </VueFlow>
+    </section>
+
+    <aside v-if="selectedTreatment" class="evidence-panel" aria-label="Treatment evidence">
+      <div class="evidence-header">
+        <div>
+          <span class="evidence-kicker">Evidence</span>
+          <h2>{{ selectedTreatment.label }}</h2>
+        </div>
+        <button class="evidence-close" title="Close evidence panel" @click="closeEvidencePanel">
+          ×
+        </button>
       </div>
-    </transition>
 
-    <PatientProfilePanel />
-
-    <VueFlow
-      :nodes="computedNodes"
-      :edges="computedEdges"
-      :default-zoom="0.95"
-      :min-zoom="0.3"
-      :max-zoom="2"
-      fit-view-on-init
-      :nodes-draggable="false"
-      :nodes-connectable="false"
-      :elements-selectable="false"
-      class="tri-canvas"
-      @node-click="onNodeClick"
-      @node-mouse-enter="onNodeHover"
-      @node-mouse-leave="onNodeHoverEnd"
-    >
-      <Background pattern-color="#e2e8f0" :gap="24" />
-      <Controls>
-        <ControlButton
-          class="minimap-control"
-          :class="{ active: showMiniMap }"
-          :title="showMiniMap ? 'Hide minimap' : 'Show minimap'"
-          @click="showMiniMap = !showMiniMap"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M9 18.7 3.7 21A1 1 0 0 1 2.3 20V5.6a1 1 0 0 1 .6-.9L9 2.3l6 3 5.3-2.3A1 1 0 0 1 21.7 4v14.4a1 1 0 0 1-.6.9L15 21.7l-6-3Zm0-14.2v12M15 7.5v12"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-            />
-          </svg>
-        </ControlButton>
-      </Controls>
-      <MiniMap
-        v-if="showMiniMap"
-        class="tri-minimap"
-        node-color="#b8cce4"
-        position="bottom-left"
-      />
-
-      <template #node-customGroup="nodeProps">
-        <GroupNode :data="nodeProps.data" />
-      </template>
-      <template #node-priorNode="nodeProps">
-        <PriorNode :data="nodeProps.data" @select="selectPrior(nodeProps.id)" />
-      </template>
-      <template #node-condNode="nodeProps">
-        <CondNode :data="nodeProps.data" />
-      </template>
-      <template #node-treatNode="nodeProps">
-        <TreatNode :data="nodeProps.data" />
-      </template>
-      <template #node-sectionLabel="nodeProps">
-        <SectionLabelNode :data="nodeProps.data" />
-      </template>
-    </VueFlow>
+      <div class="evidence-body">
+        <div class="evidence-summary">
+          <span class="evidence-dot" :class="`cat-${selectedTreatment.cat}`"></span>
+          <span>{{ treatmentCategoryLabel }}</span>
+        </div>
+        <p>
+          Evidence content for this treatment option will be shown here after the
+          supporting data model is finalized.
+        </p>
+      </div>
+    </aside>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
@@ -86,11 +111,13 @@ import TreatNode          from '../components/nodes/TreatNode.vue'
 import SectionLabelNode   from '../components/nodes/SectionLabelNode.vue'
 import PatientProfilePanel from '../components/PatientProfilePanel.vue'
 
-import { buildTriColumnNodes, EDGE_RULES } from '../data/triColumn.js'
+import { buildTriColumnNodes, EDGE_RULES, TREATMENT_ITEMS } from '../data/triColumn.js'
 import { PRIOR_WITH_DOCETAXEL, usePatientProfile } from '../composables/usePatientProfile.js'
 
 // ── State ────────────────────────────────────────────────────────
 const hoveredNodeId = ref(null)
+const selectedTreatmentId = ref(null)
+const flowInstance = ref(null)
 const BASE_NODES    = buildTriColumnNodes()
 
 const { profile, selectedPriorId, selectedCondIds, toggleCondById } = usePatientProfile()
@@ -108,6 +135,24 @@ const selectedPriorHasDocetaxel = computed(() => {
   return PRIOR_WITH_DOCETAXEL.has(profile.value.prior)
 })
 
+const selectedTreatment = computed(() =>
+  TREATMENT_ITEMS.find(item => item.id === selectedTreatmentId.value) || null
+)
+
+const CATEGORY_LABELS = {
+  parp: 'PARP inhibitor based option',
+  arpi: 'AR pathway inhibitor',
+  chemo: 'Chemotherapy',
+  radio: 'Radiopharmaceutical',
+  targeted: 'Targeted radioligand therapy',
+  immuno: 'Immunotherapy',
+  local: 'Local therapy',
+}
+
+const treatmentCategoryLabel = computed(() =>
+  CATEGORY_LABELS[selectedTreatment.value?.cat] || 'Treatment option'
+)
+
 // ── Selection handlers ───────────────────────────────────────────
 function selectPrior(id) {
   const key = PRIOR_NODE_TO_KEY[id]
@@ -119,6 +164,10 @@ function onNodeClick({ node }) {
   if (node.type === 'condNode' && selectedPrior.value && activeCondIds.value.has(node.id)) {
     toggleCondById(node.id)
   }
+  if (node.type === 'treatNode') {
+    selectedTreatmentId.value = node.id
+    refitFlowchart()
+  }
 }
 
 function onNodeHover({ node }) {
@@ -128,6 +177,22 @@ function onNodeHover({ node }) {
 }
 function onNodeHoverEnd() {
   hoveredNodeId.value = null
+}
+
+function onPaneReady(instance) {
+  flowInstance.value = instance
+}
+
+function closeEvidencePanel() {
+  selectedTreatmentId.value = null
+  refitFlowchart()
+}
+
+async function refitFlowchart() {
+  await nextTick()
+  window.setTimeout(() => {
+    flowInstance.value?.fitView?.({ padding: 0.12, duration: 220 })
+  }, 260)
 }
 
 // ── Derived node sets ────────────────────────────────────────────
@@ -199,6 +264,7 @@ const computedNodes = computed(() =>
                         : !inPath ? 'disabled'
                         : matchedTreatIds.value.has(node.id) ? 'matched'
                         : 'potential',
+          selected: node.id === selectedTreatmentId.value,
           hoverHighlight: hoverLinkedIds.value.has(node.id),
         }}
       }
@@ -261,12 +327,22 @@ const computedEdges = computed(() => {
 .tri-view {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100%;
   position: relative;
+  min-width: 0;
+  background: #f0f4f8;
+}
+.flowchart-panel {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
 }
 .tri-canvas {
   flex: 1;
+  min-width: 0;
 }
 
 /* Hint banner */
@@ -296,6 +372,114 @@ const computedEdges = computed(() => {
   background: #eff6ff;
 }
 :deep(.tri-minimap) {
-  margin-left: 252px;
+  margin-left: 50px;
+}
+
+.evidence-panel {
+  width: 400px;
+  flex: 0 0 400px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #ffffff;
+  border-left: 1px solid #dbe4ee;
+  box-shadow: -8px 0 24px rgba(15, 23, 42, 0.08);
+  z-index: 15;
+}
+
+.evidence-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.evidence-kicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.evidence-header h2 {
+  margin: 0;
+  color: #1e3a5f;
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.evidence-close {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.evidence-close:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.evidence-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+
+.evidence-summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.evidence-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.evidence-dot.cat-parp { background: #0d9488; }
+.evidence-dot.cat-arpi { background: #7c3aed; }
+.evidence-dot.cat-chemo { background: #9333ea; }
+.evidence-dot.cat-radio { background: #d97706; }
+.evidence-dot.cat-targeted { background: #0891b2; }
+.evidence-dot.cat-immuno { background: #db2777; }
+.evidence-dot.cat-local { background: #64748b; }
+
+.evidence-body p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .evidence-panel {
+    width: 360px;
+    flex-basis: 360px;
+  }
 }
 </style>

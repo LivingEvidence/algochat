@@ -1,6 +1,6 @@
 <template>
   <div class="treat-node"
-    :class="[`cat-${data.cat}`, `state-${data.state || 'default'}`, { 'hover-highlight': data.hoverHighlight }]"
+    :class="[`cat-${data.cat}`, `state-${data.state || 'default'}`, { selected: data.selected, 'hover-highlight': data.hoverHighlight }]"
   >
     <Handle type="target" :position="Position.Left" />
     <span class="cat-dot"></span>
@@ -30,6 +30,7 @@ defineProps(['data'])
   font-weight: 500;
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, opacity 0.2s;
   position: relative;
+  cursor: pointer;
 }
 
 /* ── default: no prior selected, all gray ── */
@@ -62,6 +63,12 @@ defineProps(['data'])
   border-color: #e2e8f0;
   background: #f8fafc;
   color: #94a3b8;
+}
+
+.selected {
+  opacity: 1;
+  border-color: #1e3a5f;
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.18);
 }
 
 /* ── hover highlight (from condition hover) ── */
