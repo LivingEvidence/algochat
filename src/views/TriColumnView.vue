@@ -128,12 +128,6 @@
     </aside>
 
     <section class="flowchart-panel" aria-label="All pathways flowchart">
-      <!-- Hint when nothing selected -->
-      <transition name="fade">
-        <div class="hint-banner" v-if="!selectedPrior">
-          Select a prior treatment in the patient profile to see applicable options →
-        </div>
-      </transition>
       <SavedProfilesTray />
 
       <VueFlow
@@ -735,25 +729,6 @@ const computedEdges = computed(() => {
   min-width: 0;
 }
 
-/* Hint banner */
-.hint-banner {
-  position: absolute;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  background: #1e3a5f;
-  color: #93c5fd;
-  font-size: 12.5px;
-  padding: 7px 18px;
-  border-radius: 20px;
-  pointer-events: none;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
 .minimap-control {
   color: #475569;
 }
@@ -885,10 +860,5 @@ const computedEdges = computed(() => {
     flex-basis: 280px;
   }
 
-  .hint-banner {
-    max-width: calc(100% - 32px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 }
 </style>
