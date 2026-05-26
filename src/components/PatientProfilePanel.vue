@@ -1,7 +1,7 @@
 <template>
   <div class="profile-panel" :class="{ collapsed }">
     <button class="toggle-btn" @click="collapsed = !collapsed">
-      <span class="toggle-icon">{{ collapsed ? '▶' : '◀' }}</span>
+      <span class="toggle-icon">{{ collapsed ? '◀' : '▶' }}</span>
       <span v-if="!collapsed">Patient Profile</span>
     </button>
 
@@ -139,7 +139,7 @@ function summarize(snap) {
 <style scoped>
 .profile-panel {
   position: absolute;
-  top: 12px; left: 12px;
+  top: 12px; right: 12px;
   z-index: 20;
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -191,12 +191,18 @@ function summarize(snap) {
 
 .radio-row, .check-row {
   display: flex; align-items: center; gap: 6px;
-  font-size: 11.5px; color: #334155; padding: 2px 0; cursor: pointer; line-height: 1.3;
+  font-size: 11.5px; color: #334155; padding: 3px 5px; cursor: pointer; line-height: 1.3;
+  border-radius: 5px;
+  transition: background 0.12s, color 0.12s;
+}
+.radio-row:hover, .check-row:hover {
+  background: #eff6ff;
+  color: #1e3a5f;
 }
 .radio-row input, .check-row input { accent-color: #2d6a4f; flex-shrink: 0; }
 
 .indent-marker { font-size: 10px; color: #94a3b8; margin: 2px 0 1px 4px; font-style: italic; }
-.radio-row.indented { padding-left: 14px; color: #52796f; }
+.radio-row.indented { padding-left: 19px; color: #52796f; }
 .radio-row.indented input { accent-color: #52796f; }
 
 /* Save bar */

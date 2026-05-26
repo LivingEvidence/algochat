@@ -4,7 +4,7 @@
       <!-- Hint when nothing selected -->
       <transition name="fade">
         <div class="hint-banner" v-if="!selectedPrior">
-          ← Select a prior treatment in the left panel to see applicable options
+          Select a prior treatment in the right panel to see applicable options →
         </div>
       </transition>
 
@@ -27,7 +27,7 @@
         @node-mouse-leave="onNodeHoverEnd"
       >
         <Background pattern-color="#e2e8f0" :gap="24" />
-        <Controls>
+        <Controls position="bottom-right">
           <ControlButton
             class="minimap-control"
             :class="{ active: showMiniMap }"
@@ -50,7 +50,7 @@
           v-if="showMiniMap"
           class="tri-minimap"
           node-color="#b8cce4"
-          position="bottom-left"
+          position="bottom-right"
         />
 
         <template #node-customGroup="nodeProps">
@@ -372,7 +372,7 @@ const computedEdges = computed(() => {
   background: #eff6ff;
 }
 :deep(.tri-minimap) {
-  margin-left: 50px;
+  margin-right: 50px;
 }
 
 .evidence-panel {
