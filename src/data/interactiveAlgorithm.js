@@ -44,14 +44,14 @@ const V_PAD_SUB     = 8
 const PROMPT_H      = 44
 
 const G1_W          = 200
-const COL2_W        = 280
+const COL2_W        = 280   // Question + Biomarker Assessment (stacked)
 const SPECIAL_W     = 280
 const G3_W          = 240
 
 const G1_X          = 40
-const COL2_X        = 290
-const SPECIAL_X     = 600
-const G3_X          = 920
+const COL2_X        = 290   // Question + Biomarker column
+const SPECIAL_X     = 600   // Special Situations column
+const G3_X          = 920   // Treatment Options column
 const TOP_Y         = 30
 const COL_GAP_VERT  = 24
 const SPECIAL_DESC_H = 38
@@ -197,8 +197,9 @@ export function buildInteractiveNodes(state) {
     + (biomarkerGroups.length - 1) * GROUP_GAP
     + V_PAD_TOP
 
-  const bioBlockTopY = TOP_Y + questionCardH + COL_GAP_VERT
-  let col2BottomY = TOP_Y + questionCardH
+  const QUESTION_TO_BIO_GAP = 72
+  const bioBlockTopY = TOP_Y + questionCardH + QUESTION_TO_BIO_GAP
+  let bioBottomY = TOP_Y + questionCardH
 
   if (bioChoice === 'yes') {
     const BIO_W = COL2_W
@@ -213,6 +214,8 @@ export function buildInteractiveNodes(state) {
         label: 'Biomarker Assessment',
         color: '#94a3b8',
         tier: 'subtle',
+        acceptsTarget: true,
+        targetPosition: 'top',
       },
       draggable: false, selectable: false, focusable: false,
     })
@@ -226,7 +229,11 @@ export function buildInteractiveNodes(state) {
         parentNode: 'g-bio',
         position: { x: H_PAD_TOP, y: midY },
         style: { width: `${MID_W}px`, height: `${midH}px` },
-        data: { label: group.label, color: '#52796f', tier: 'mid' },
+        data: {
+          label: group.label,
+          color: '#52796f',
+          tier: 'mid',
+        },
         draggable: false, selectable: false, focusable: false,
       })
 
@@ -251,7 +258,11 @@ export function buildInteractiveNodes(state) {
             parentNode: sgId,
             position: { x: H_PAD_SUB, y: HEADER_H_SUB + V_PAD_SUB + i * (ITEM_H + ITEM_GAP) },
             style: { width: `${sgItemW}px` },
-            data: { label: item.label },
+            data: {
+              label: item.label,
+              noTargetHandle: true,
+              noSourceHandle: NON_RECOMMENDING_COND_IDS.has(item.id),
+            },
             draggable: false, selectable: false,
           })
         })
@@ -264,7 +275,11 @@ export function buildInteractiveNodes(state) {
           parentNode: midId,
           position: { x: H_PAD_MID, y: innerY },
           style: { width: `${MID_ITEM_W}px` },
-          data: { label: item.label },
+          data: {
+            label: item.label,
+            noTargetHandle: true,
+            noSourceHandle: NON_RECOMMENDING_COND_IDS.has(item.id),
+          },
           draggable: false, selectable: false,
         })
         innerY += ITEM_H + ITEM_GAP
@@ -273,7 +288,7 @@ export function buildInteractiveNodes(state) {
       midY += midH + GROUP_GAP
     })
 
-    col2BottomY = bioBlockTopY + bioExpandedH
+    bioBottomY = bioBlockTopY + bioExpandedH
   }
 
   // ─── Special Situations ────────────────────────────────────────
@@ -332,7 +347,7 @@ export function buildInteractiveNodes(state) {
 
   // Vertically center treatments against the tallest column to the left
   const leftMaxY = Math.max(
-    col2BottomY,
+    bioBottomY,
     showSpecial ? TOP_Y + specialGroupH : TOP_Y,
   )
   const treatmentsAreaH = leftMaxY - TOP_Y

@@ -247,12 +247,10 @@ import {
   buildInteractiveNodes,
   EDGE_RULES,
   TREATMENT_ITEMS,
-  SPECIAL_ITEMS,
   BIOMARKER_MUTEX_BY_ID,
+  BIOMARKER_MUTEX_GROUPS,
   NON_RECOMMENDING_COND_IDS,
 } from '../data/interactiveAlgorithm.js'
-
-const SPECIAL_IDS = new Set(SPECIAL_ITEMS.map(item => item.id))
 import {
   useInteractiveAlgorithmStore,
 } from '../stores/interactiveAlgorithm.js'
@@ -416,6 +414,7 @@ const hoverLinkedIds = computed(() => {
   if (!hid || !selectedPrior.value) return s
   const rules = EDGE_RULES[selectedPrior.value] || []
   rules.forEach(r => {
+    if (NON_RECOMMENDING_COND_IDS.has(r.from)) return
     if (r.from === hid && activeTreatIds.value.has(r.to))   s.add(r.to)
     if (r.to   === hid && activeCondIds.value.has(r.from))  s.add(r.from)
   })
@@ -500,7 +499,7 @@ const computedEdges = computed(() => {
     && !NON_RECOMMENDING_COND_IDS.has(r.from),
   )
 
-  // ── Cond → Treatment edges (only after treatments are revealed) ──
+  // ── Cond / Special → Treatment edges (only after treatments visible) ──
   const n2n3 = treatmentsVisible ? visibleRules.map((rule, i) => {
     const id = `e23-${selectedPrior.value}-${i}`
     const isMatched = matchedConds.has(rule.from) && matchedTreat.has(rule.to)
@@ -509,18 +508,34 @@ const computedEdges = computed(() => {
       : edgePotential(id, rule.from, rule.to)
   }) : []
 
-  // ── Prior → Cond edges ──
-  // Skip Special Situations — they do not depend on the prior treatment.
-  const activeFromIds = [...new Set(visibleRules.map(r => r.from))]
-    .filter(id => !SPECIAL_IDS.has(id))
-  const n1n2 = activeFromIds.map((condId, i) => {
-    const id = `e12-${selectedPrior.value}-${i}`
-    return matchedConds.has(condId)
-      ? edgeMatchedGreen(id, selectedPrior.value, condId)
-      : edgePotential(id, selectedPrior.value, condId)
-  })
+  // ── Prior → Biomarker Question (always when prior is chosen) ──
+  const priorEdges = presentIds.has('bio-question')
+    ? [edgeMatchedGreen(
+        `e-prior-${selectedPrior.value}`,
+        selectedPrior.value,
+        'bio-question',
+      )]
+    : []
 
-  return [...n1n2, ...n2n3]
+  // ── Biomarker Question → Biomarker Assessment (outer group only) ──
+  // Single edge to the whole assessment block rather than one per test.
+  const groupEdges = []
+  if (
+    bioChoice.value === 'yes'
+    && presentIds.has('bio-question')
+    && presentIds.has('g-bio')
+  ) {
+    const anyBiomarker = [...matchedConds].some(id =>
+      Object.values(BIOMARKER_MUTEX_GROUPS).some(items => items.includes(id)),
+    )
+    groupEdges.push(
+      anyBiomarker
+        ? edgeMatchedGreen('e-bq-bio', 'bio-question', 'g-bio')
+        : edgePotential('e-bq-bio', 'bio-question', 'g-bio'),
+    )
+  }
+
+  return [...priorEdges, ...groupEdges, ...n2n3]
 })
 
 </script>

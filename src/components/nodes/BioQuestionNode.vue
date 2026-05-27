@@ -1,5 +1,7 @@
 <template>
   <div class="bio-question">
+    <Handle type="target" :position="Position.Left" />
+    <Handle type="source" :position="Position.Bottom" />
     <p class="question">{{ data.label }}</p>
     <div class="choices">
       <button
@@ -19,6 +21,7 @@
 </template>
 
 <script setup>
+import { Handle, Position } from '@vue-flow/core'
 defineProps(['data'])
 const emit = defineEmits(['choose'])
 </script>

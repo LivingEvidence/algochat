@@ -6,8 +6,8 @@
       { 'hover-highlight': data.hoverHighlight },
     ]"
   >
-    <Handle v-if="data.accent !== 'special'" type="target" :position="Position.Left" />
-    <Handle type="source" :position="Position.Right" />
+    <Handle v-if="data.accent !== 'special' && !data.noTargetHandle" type="target" :position="Position.Left" />
+    <Handle v-if="!data.noSourceHandle" type="source" :position="Position.Right" />
     <span class="label">{{ data.label }}</span>
   </div>
 </template>

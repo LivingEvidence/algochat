@@ -1,5 +1,6 @@
 <template>
   <div class="grp-container" :class="`tier-${tier}`" :style="containerStyle">
+    <Handle v-if="data.acceptsTarget" type="target" :position="targetPosition" class="grp-handle" />
     <div class="grp-header" :style="headerStyle">
       <span v-if="data.num" class="grp-num">{{ data.num }}</span>
       {{ data.label }}
@@ -11,8 +12,13 @@
 
 <script setup>
 import { computed } from 'vue'
+import { Handle, Position } from '@vue-flow/core'
 const props = defineProps(['data'])
 const tier = computed(() => props.data?.tier || 'col')
+const targetPosition = computed(() => {
+  const pos = props.data?.targetPosition
+  return pos === 'top' ? Position.Top : Position.Left
+})
 const containerStyle = computed(() => {
   if (tier.value === 'subtle') return {}
   return { borderColor: props.data.color }
