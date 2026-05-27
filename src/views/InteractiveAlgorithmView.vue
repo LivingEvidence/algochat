@@ -186,6 +186,9 @@
         <template #node-sectionLabel="nodeProps">
           <SectionLabelNode :data="nodeProps.data" />
         </template>
+        <template #node-bioQuestionNode="nodeProps">
+          <BioQuestionNode :data="nodeProps.data" @choose="setBioChoice($event)" />
+        </template>
         <template #node-promptNode="nodeProps">
           <div class="prompt-node">
             <svg viewBox="0 0 24 24" aria-hidden="true" class="prompt-icon">
@@ -236,6 +239,7 @@ import PriorNode          from '../components/nodes/PriorNode.vue'
 import CondNode           from '../components/nodes/CondNode.vue'
 import TreatNode          from '../components/nodes/TreatNode.vue'
 import SectionLabelNode   from '../components/nodes/SectionLabelNode.vue'
+import BioQuestionNode    from '../components/nodes/BioQuestionNode.vue'
 import ChatPanel from '../components/ChatPanel.vue'
 
 import { storeToRefs } from 'pinia'
@@ -251,8 +255,6 @@ import {
 const SPECIAL_IDS = new Set(SPECIAL_ITEMS.map(item => item.id))
 import {
   useInteractiveAlgorithmStore,
-  BIO_YES_ID,
-  BIO_NO_ID,
 } from '../stores/interactiveAlgorithm.js'
 
 // ── View-local UI state (not shared) ─────────────────────────────
@@ -352,9 +354,6 @@ function onNodeClick({ node }) {
     selectPrior(node.id)
     return
   }
-  // Biomarker question Yes / No
-  if (node.id === BIO_YES_ID) { setBioChoice('yes'); return }
-  if (node.id === BIO_NO_ID)  { setBioChoice('no');  return }
 
   if (node.type === 'condNode' && selectedPrior.value && bioChoice.value !== null) {
     // Only toggle real condition / special-situation nodes (tied to EDGE_RULES)
@@ -437,16 +436,6 @@ const computedNodes = computed(() =>
       return { ...node, data: { ...node.data, selected: node.id === selectedPrior.value } }
     }
     if (node.type === 'condNode') {
-      // Biomarker Yes / No prompt choices are styled separately
-      if (node.data?.interactiveChoice) {
-        const isChosen = bioChoice.value !== null
-          && node.data.choiceValue === bioChoice.value
-        return { ...node, data: {
-          ...node.data,
-          state: isChosen ? 'matched' : 'potential',
-          hoverHighlight: false,
-        } }
-      }
       const inPath = activeCondIds.value.has(node.id)
       return { ...node, data: {
         ...node.data,

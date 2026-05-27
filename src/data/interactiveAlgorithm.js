@@ -147,45 +147,17 @@ export function buildInteractiveNodes(state) {
   // No prior selected → stop here.
   if (!prior) return nodes
 
-  // ─── Biomarker Question (separate from the assessment node) ─────
-  // Always visible once a prior treatment has been chosen — the user can
-  // re-select the Yes/No answer at any time.
-  const Q_INNER_W = COL2_W - 2 * H_PAD_TOP
-  const questionCardH = HEADER_H_TOP + V_PAD_TOP
-    + PROMPT_H + ITEM_GAP
-    + 2 * ITEM_H + ITEM_GAP
-    + V_PAD_TOP
-
+  // ─── Biomarker Question — minimal standalone card ───────────────
+  // Always visible once a prior treatment has been chosen.
+  const questionCardH = 96
   nodes.push({
-    id: 'g-bio-question', type: 'customGroup',
+    id: 'bio-question', type: 'bioQuestionNode',
     position: { x: COL2_X, y: TOP_Y },
-    style: { width: `${COL2_W}px`, height: `${questionCardH}px` },
-    data: { label: 'Biomarker Assessment Question', color: '#94a3b8', tier: 'subtle' },
-    draggable: false, selectable: false, focusable: false,
-  })
-  nodes.push({
-    id: 'bio-prompt', type: 'promptNode',
-    parentNode: 'g-bio-question',
-    position: { x: H_PAD_TOP, y: HEADER_H_TOP + V_PAD_TOP },
-    style: { width: `${Q_INNER_W}px` },
-    data: { label: 'Has the patient taken any biomarker assessment?' },
-    draggable: false, selectable: false,
-  })
-  const yesY = HEADER_H_TOP + V_PAD_TOP + PROMPT_H + ITEM_GAP
-  nodes.push({
-    id: BIO_YES_ID, type: 'condNode',
-    parentNode: 'g-bio-question',
-    position: { x: H_PAD_TOP, y: yesY },
-    style: { width: `${Q_INNER_W}px` },
-    data: { label: 'Yes', state: 'potential', interactiveChoice: true, choiceValue: 'yes' },
-    draggable: false, selectable: false,
-  })
-  nodes.push({
-    id: BIO_NO_ID, type: 'condNode',
-    parentNode: 'g-bio-question',
-    position: { x: H_PAD_TOP, y: yesY + ITEM_H + ITEM_GAP },
-    style: { width: `${Q_INNER_W}px` },
-    data: { label: 'No', state: 'potential', interactiveChoice: true, choiceValue: 'no' },
+    style: { width: `${COL2_W}px` },
+    data: {
+      label: 'Has the patient taken any biomarker assessment?',
+      choice: bioChoice,
+    },
     draggable: false, selectable: false,
   })
 
