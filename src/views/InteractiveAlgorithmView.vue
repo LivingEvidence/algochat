@@ -386,10 +386,12 @@ function closeEvidencePanel() {
 async function activateTool(tool) {
   if (activeTool.value === tool) {
     activeTool.value = null
+    refitFlowchart()
     return
   }
 
   activeTool.value = tool
+  refitFlowchart()
   if (tool === 'chat') {
     await nextTick()
     chatPanel.value?.focusComposer?.()
@@ -398,6 +400,7 @@ async function activateTool(tool) {
 
 function closeToolPanel() {
   activeTool.value = null
+  refitFlowchart()
 }
 
 async function refitFlowchart() {
