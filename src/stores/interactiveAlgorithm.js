@@ -6,6 +6,13 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { EDGE_RULES } from '../data/triColumn.js'
 
+// Negative / absent biomarker findings don't recommend any treatment.
+const NON_RECOMMENDING_COND_IDS = new Set([
+  'n2-hrr-neg',
+  'n2-psma-neg',
+  'n2-msi-absent',
+])
+
 export const BIO_YES_ID = 'bio-yes'
 export const BIO_NO_ID  = 'bio-no'
 
@@ -28,7 +35,9 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
   const activeTreatIds = computed(() => {
     const s = new Set()
     if (selectedPrior.value) {
-      EDGE_RULES[selectedPrior.value]?.forEach(r => s.add(r.to))
+      EDGE_RULES[selectedPrior.value]?.forEach(r => {
+        if (!NON_RECOMMENDING_COND_IDS.has(r.from)) s.add(r.to)
+      })
     }
     return s
   })
@@ -44,6 +53,7 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     const s = new Set()
     if (!selectedPrior.value || selectedCondIds.value.size === 0) return s
     EDGE_RULES[selectedPrior.value]?.forEach(r => {
+      if (NON_RECOMMENDING_COND_IDS.has(r.from)) return
       if (selectedCondIds.value.has(r.from)) s.add(r.to)
     })
     return s
@@ -73,6 +83,16 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     const next = new Set(selectedCondIds.value)
     if (next.has(id)) next.delete(id)
     else next.add(id)
+    selectedCondIds.value = next
+  }
+
+  // Toggle `id`, ensuring at most one id from `siblingIds` is selected.
+  // Used for mutually-exclusive biomarker groups (HRR / PSMA / MSI).
+  function toggleCondExclusive(id, siblingIds) {
+    const alreadyOn = selectedCondIds.value.has(id)
+    const next = new Set(selectedCondIds.value)
+    siblingIds.forEach(s => next.delete(s))
+    if (!alreadyOn) next.add(id)
     selectedCondIds.value = next
   }
 
@@ -106,6 +126,7 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     selectPrior,
     setBioChoice,
     toggleCondById,
+    toggleCondExclusive,
     selectTreatment,
     clearTreatment,
     reset,

@@ -64,6 +64,28 @@ BIOMARKER_GROUPS.forEach(g => {
   ;(g.items || []).forEach(i => BIOMARKER_IDS.add(i.id))
 })
 
+// Mutually-exclusive selection groups inside the Biomarker Assessment.
+// Choosing any id in a group deselects the others in the same group.
+// Special Situations are intentionally excluded — multiple may apply.
+export const BIOMARKER_MUTEX_GROUPS = {
+  hrr:  ['n2-hrr-pos', 'n2-brca', 'n2-non-brca', 'n2-hrr-neg'],
+  psma: ['n2-psma-pos', 'n2-psma-neg'],
+  msi:  ['n2-msi-present', 'n2-msi-absent'],
+}
+
+export const BIOMARKER_MUTEX_BY_ID = {}
+Object.values(BIOMARKER_MUTEX_GROUPS).forEach(group => {
+  group.forEach(id => { BIOMARKER_MUTEX_BY_ID[id] = group })
+})
+
+// Biomarker ids that should never drive a treatment recommendation
+// (negative / absent findings are informational only).
+export const NON_RECOMMENDING_COND_IDS = new Set([
+  'n2-hrr-neg',
+  'n2-psma-neg',
+  'n2-msi-absent',
+])
+
 // ── Geometry helpers ─────────────────────────────────────────────
 
 function subGroupHeight(sg) {

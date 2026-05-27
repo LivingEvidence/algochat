@@ -244,6 +244,8 @@ import {
   EDGE_RULES,
   TREATMENT_ITEMS,
   SPECIAL_ITEMS,
+  BIOMARKER_MUTEX_BY_ID,
+  NON_RECOMMENDING_COND_IDS,
 } from '../data/interactiveAlgorithm.js'
 
 const SPECIAL_IDS = new Set(SPECIAL_ITEMS.map(item => item.id))
@@ -336,7 +338,12 @@ function setBioChoice(choice) {
 }
 
 function toggleCondById(id) {
-  interactiveStore.toggleCondById(id)
+  const mutexGroup = BIOMARKER_MUTEX_BY_ID[id]
+  if (mutexGroup) {
+    interactiveStore.toggleCondExclusive(id, mutexGroup)
+  } else {
+    interactiveStore.toggleCondById(id)
+  }
   refitFlowchart()
 }
 
@@ -495,8 +502,14 @@ const computedEdges = computed(() => {
     markerEnd: { type: 'arrowclosed', color: '#2d6a4f', width: 16, height: 16 },
   })
 
-  // Filter EDGE_RULES to those whose endpoints are currently rendered
-  const visibleRules = rules.filter(r => presentIds.has(r.from) && presentIds.has(r.to))
+  // Filter EDGE_RULES to those whose endpoints are currently rendered.
+  // Negative / absent findings don't drive treatment, so their edges
+  // are suppressed entirely.
+  const visibleRules = rules.filter(r =>
+    presentIds.has(r.from)
+    && presentIds.has(r.to)
+    && !NON_RECOMMENDING_COND_IDS.has(r.from),
+  )
 
   // ── Cond → Treatment edges (only after treatments are revealed) ──
   const n2n3 = treatmentsVisible ? visibleRules.map((rule, i) => {
