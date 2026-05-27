@@ -53,6 +53,7 @@ const COL2_X        = 290   // Question + Biomarker column
 const SPECIAL_X     = 600   // Special Situations column
 const G3_X          = 920   // Treatment Options column
 const TOP_Y         = 30
+const SPECIAL_Y     = 6
 const COL_GAP_VERT  = 24
 const SPECIAL_DESC_H = 38
 
@@ -122,21 +123,27 @@ function treatmentGroupHeight(items) {
 // Per-item height inside the Special Situations group. Sub-grouped items
 // (e.g., Docetaxel eligibility with Eligible / Ineligible) need extra
 // vertical space for their internal header + child rows.
-const DOC_INELIG_H = 70
+const DOC_ELIG_TOP_GAP = -10
+const DOC_ELIG_GROUP_TOP_GAP = 12
+const DOC_ELIG_H = 34
+const DOC_INELIG_H = 58
+const SPECIAL_WRAPPED_ITEM_H = 52
 
 function specialItemHeight(item) {
   if (item.items) {
     // sub-group: header + 2 children + paddings
     return HEADER_H_SUB + V_PAD_SUB
-      + ITEM_H + ITEM_GAP + DOC_INELIG_H
+      + DOC_ELIG_TOP_GAP + DOC_ELIG_H + ITEM_GAP + DOC_INELIG_H
       + V_PAD_SUB
   }
+  if (item.id === 'n2-bone') return SPECIAL_WRAPPED_ITEM_H
   return ITEM_H
 }
 
 function specialGroupHeight(items) {
   let h = HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID
   items.forEach((it, i) => {
+    if (it.items) h += DOC_ELIG_GROUP_TOP_GAP
     h += specialItemHeight(it)
     if (i < items.length - 1) h += ITEM_GAP
   })
@@ -342,7 +349,7 @@ export function buildInteractiveNodes(state) {
   if (showSpecial) {
     nodes.push({
       id: 'g-special', type: 'customGroup',
-      position: { x: SPECIAL_X, y: TOP_Y },
+      position: { x: SPECIAL_X, y: SPECIAL_Y },
       style: { width: `${SPECIAL_W}px`, height: `${specialGroupH}px` },
       data: {
         label: 'Special Situations',
@@ -356,6 +363,7 @@ export function buildInteractiveNodes(state) {
     visibleSpecialItems.forEach(item => {
       if (item.items) {
         // ── Sub-grouped special situation (Docetaxel eligibility) ──
+        specialY += DOC_ELIG_GROUP_TOP_GAP
         const sgH = specialItemHeight(item)
         const sgItemW = SPECIAL_ITEM_W - 2 * H_PAD_SUB
         nodes.push({
@@ -366,33 +374,34 @@ export function buildInteractiveNodes(state) {
           data: { label: item.label, color: SPECIAL_COLOR, tier: 'sub' },
           draggable: false, selectable: false, focusable: false,
         })
-        let innerY = HEADER_H_SUB + V_PAD_SUB
+        let innerY = HEADER_H_SUB + V_PAD_SUB + DOC_ELIG_TOP_GAP
         item.items.forEach((sub, i) => {
-          const subH = i === 0 ? ITEM_H : DOC_INELIG_H
+          const subH = i === 0 ? DOC_ELIG_H : DOC_INELIG_H
           nodes.push({
             id: sub.id, type: 'condNode',
             parentNode: `g-${item.id}`,
             position: { x: H_PAD_SUB, y: innerY },
             style: {
               width: `${sgItemW}px`,
-              ...(i === 1 ? { height: `${DOC_INELIG_H}px` } : {}),
+              height: `${subH}px`,
             },
-            data: { label: sub.label, accent: 'special' },
+            data: { label: sub.label, accent: 'special', compact: true },
             draggable: false, selectable: false,
           })
           innerY += subH + ITEM_GAP
         })
         specialY += sgH + ITEM_GAP
       } else {
+        const itemH = specialItemHeight(item)
         nodes.push({
           id: item.id, type: 'condNode',
           parentNode: 'g-special',
           position: { x: H_PAD_MID, y: specialY },
-          style: { width: `${SPECIAL_ITEM_W}px` },
+          style: { width: `${SPECIAL_ITEM_W}px`, height: `${itemH}px` },
           data: { label: item.label, accent: 'special' },
           draggable: false, selectable: false,
         })
-        specialY += ITEM_H + ITEM_GAP
+        specialY += itemH + ITEM_GAP
       }
     })
   }
@@ -412,7 +421,7 @@ export function buildInteractiveNodes(state) {
   // Vertically center treatments against the tallest column to the left
   const leftMaxY = Math.max(
     bioBottomY,
-    showSpecial ? TOP_Y + specialGroupH : TOP_Y,
+    showSpecial ? SPECIAL_Y + specialGroupH : TOP_Y,
   )
   const treatmentsAreaH = leftMaxY - TOP_Y
   const g3Y = TOP_Y + Math.max(0, (treatmentsAreaH - g3H) / 2)

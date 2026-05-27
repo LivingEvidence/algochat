@@ -4,6 +4,7 @@
       `state-${data.state || 'default'}`,
       data.accent ? `accent-${data.accent}` : null,
       { 'hover-highlight': data.hoverHighlight },
+      { compact: data.compact },
     ]"
   >
     <Handle v-if="data.accent !== 'special' && !data.noTargetHandle" type="target" :position="Position.Left" />
@@ -34,6 +35,11 @@ defineProps(['data'])
   font-weight: 500;
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, opacity 0.2s;
   position: relative;
+}
+.cond-node.compact {
+  min-height: 34px;
+  padding: 5px 10px;
+  line-height: 1.2;
 }
 
 /* ── default: no prior selected ── */
