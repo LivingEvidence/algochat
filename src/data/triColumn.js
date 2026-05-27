@@ -56,12 +56,20 @@ export const BIOMARKER_GROUPS = [
   },
 ]
 
-// Special situations — each becomes its own standalone node
+// Special situations — most are standalone, but "Docetaxel eligibility"
+// is a sub-group with mutually-exclusive Eligible / Ineligible options.
 export const SPECIAL_ITEMS = [
-  { id: 'n2-oligo',        label: 'Oligometastatic disease' },
-  { id: 'n2-indolent',     label: 'Indolent disease' },
-  { id: 'n2-bone',         label: 'Bone only, symptomatic' },
-  { id: 'n2-doc-eligible', label: 'Eligible for docetaxel' },
+  { id: 'n2-oligo',    label: 'Oligometastatic disease' },
+  { id: 'n2-indolent', label: 'Indolent disease' },
+  { id: 'n2-bone',     label: 'Bone-predominant, symptomatic disease' },
+  {
+    id: 'sg-doc-elig',
+    label: 'Docetaxel eligibility',
+    items: [
+      { id: 'n2-doc-yes', label: 'Eligible' },
+      { id: 'n2-doc-no',  label: 'Ineligible due to comorbidities (neuropathy, edema, lung disease, etc.)' },
+    ],
+  },
 ]
 
 export const TREATMENT_ITEMS = [
@@ -100,7 +108,8 @@ export const EDGE_RULES = {
     { from: 'n2-oligo',       to: 'n3-rt-surgery' },
     { from: 'n2-indolent',    to: 'n3-sipuleucel' },
     { from: 'n2-bone',        to: 'n3-ra223' },
-    { from: 'n2-doc-eligible', to: 'n3-docetaxel' },
+    { from: 'n2-doc-yes',     to: 'n3-docetaxel' },
+    { from: 'n2-doc-no',      to: 'n3-cabazi' },
   ],
   'n1-adt-doc': [
     { from: 'n2-brca',        to: 'n3-talazo-enza' },
@@ -126,7 +135,8 @@ export const EDGE_RULES = {
     { from: 'n2-oligo',       to: 'n3-rt-surgery' },
     { from: 'n2-indolent',    to: 'n3-sipuleucel' },
     { from: 'n2-bone',        to: 'n3-ra223' },
-    { from: 'n2-doc-eligible', to: 'n3-docetaxel' },
+    { from: 'n2-doc-yes',     to: 'n3-docetaxel' },
+    { from: 'n2-doc-no',      to: 'n3-cabazi' },
   ],
   'n1-adt-arpi-doc': [
     { from: 'n2-psma-pos',    to: 'n3-lu-psma' },

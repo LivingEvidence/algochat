@@ -21,10 +21,11 @@ defineProps(['data'])
 /* ── Base ── */
 .cond-node {
   width: 100%;
-  height: 40px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 8px 12px;
+  line-height: 1.3;
   border-radius: 6px;
   border: 1.5px solid #c8ddd4;
   background: #edf7f3;

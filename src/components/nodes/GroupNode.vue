@@ -25,6 +25,7 @@ const containerStyle = computed(() => {
 })
 const headerStyle = computed(() => {
   if (tier.value === 'subtle') return {}
+  if (tier.value === 'sub') return { color: props.data.color }
   return { background: props.data.color }
 })
 </script>
@@ -91,11 +92,11 @@ const headerStyle = computed(() => {
   font-weight: 600;
 }
 
-/* Sub tier — deepest nested groups, deliberately understated */
+/* Sub tier — deepest nested groups, deliberately understated.
+   Border + header color come from data.color via inline style. */
 .tier-sub {
   border-width: 1px;
   border-style: solid;
-  border-color: #d1fae5 !important;
   border-radius: 6px;
   background: transparent;
   box-shadow: none;
@@ -106,7 +107,6 @@ const headerStyle = computed(() => {
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #6b9e82 !important;
-  background: transparent !important;
+  background: transparent;
 }
 </style>

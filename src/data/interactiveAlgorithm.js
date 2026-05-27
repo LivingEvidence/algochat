@@ -73,8 +73,17 @@ export const BIOMARKER_MUTEX_GROUPS = {
   msi:  ['n2-msi-present', 'n2-msi-absent'],
 }
 
+// Special-situation sub-groups (e.g., Docetaxel eligibility) that are
+// also single-select within their group.
+const SPECIAL_MUTEX_GROUPS = {
+  'sg-doc-elig': ['n2-doc-yes', 'n2-doc-no'],
+}
+
 export const BIOMARKER_MUTEX_BY_ID = {}
 Object.values(BIOMARKER_MUTEX_GROUPS).forEach(group => {
+  group.forEach(id => { BIOMARKER_MUTEX_BY_ID[id] = group })
+})
+Object.values(SPECIAL_MUTEX_GROUPS).forEach(group => {
   group.forEach(id => { BIOMARKER_MUTEX_BY_ID[id] = group })
 })
 
@@ -110,12 +119,28 @@ function treatmentGroupHeight(items) {
   return GRP_HEADER_H + V_PAD + items.length * (ITEM_H + ITEM_GAP) + V_PAD
 }
 
+// Per-item height inside the Special Situations group. Sub-grouped items
+// (e.g., Docetaxel eligibility with Eligible / Ineligible) need extra
+// vertical space for their internal header + child rows.
+const DOC_INELIG_H = 70
+
+function specialItemHeight(item) {
+  if (item.items) {
+    // sub-group: header + 2 children + paddings
+    return HEADER_H_SUB + V_PAD_SUB
+      + ITEM_H + ITEM_GAP + DOC_INELIG_H
+      + V_PAD_SUB
+  }
+  return ITEM_H
+}
+
 function specialGroupHeight(items) {
-  const n = items.length
-  return HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID
-    + n * ITEM_H
-    + (n - 1) * ITEM_GAP
-    + V_PAD_MID
+  let h = HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID
+  items.forEach((it, i) => {
+    h += specialItemHeight(it)
+    if (i < items.length - 1) h += ITEM_GAP
+  })
+  return h + V_PAD_MID
 }
 
 // ── Builder ──────────────────────────────────────────────────────
@@ -164,10 +189,19 @@ export function buildInteractiveNodes(state) {
   if (bioChoice === null) return nodes
 
   // ─── Biomarker Assessment (only when 'yes') ─────────────────────
+  // After triple therapy (ADT + ARPI + Docetaxel) the only special
+  // situation that still applies is bone-predominant symptomatic disease.
+  // After any docetaxel-containing prior, hide the Docetaxel eligibility
+  // subgroup since the question is moot.
   const docPriors = new Set(['n1-adt-doc', 'n1-adt-arpi-doc'])
-  const visibleSpecialItems = SPECIAL_ITEMS.filter(
-    item => !(docPriors.has(prior) && item.id === 'n2-doc-eligible'),
-  )
+  let visibleSpecialItems
+  if (prior === 'n1-adt-arpi-doc') {
+    visibleSpecialItems = SPECIAL_ITEMS.filter(item => item.id === 'n2-bone')
+  } else {
+    visibleSpecialItems = SPECIAL_ITEMS.filter(
+      item => !(docPriors.has(prior) && item.id === 'sg-doc-elig'),
+    )
+  }
 
   // Customize HRR Testing items based on prior treatment. The nested
   // "HRR Positive" subgroup is flattened — we either expose the
@@ -318,18 +352,48 @@ export function buildInteractiveNodes(state) {
       },
       draggable: false, selectable: false, focusable: false,
     })
-    visibleSpecialItems.forEach((item, i) => {
-      nodes.push({
-        id: item.id, type: 'condNode',
-        parentNode: 'g-special',
-        position: {
-          x: H_PAD_MID,
-          y: HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID + i * (ITEM_H + ITEM_GAP),
-        },
-        style: { width: `${SPECIAL_ITEM_W}px` },
-        data: { label: item.label, accent: 'special' },
-        draggable: false, selectable: false,
-      })
+    let specialY = HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID
+    visibleSpecialItems.forEach(item => {
+      if (item.items) {
+        // ── Sub-grouped special situation (Docetaxel eligibility) ──
+        const sgH = specialItemHeight(item)
+        const sgItemW = SPECIAL_ITEM_W - 2 * H_PAD_SUB
+        nodes.push({
+          id: `g-${item.id}`, type: 'customGroup',
+          parentNode: 'g-special',
+          position: { x: H_PAD_MID, y: specialY },
+          style: { width: `${SPECIAL_ITEM_W}px`, height: `${sgH}px` },
+          data: { label: item.label, color: SPECIAL_COLOR, tier: 'sub' },
+          draggable: false, selectable: false, focusable: false,
+        })
+        let innerY = HEADER_H_SUB + V_PAD_SUB
+        item.items.forEach((sub, i) => {
+          const subH = i === 0 ? ITEM_H : DOC_INELIG_H
+          nodes.push({
+            id: sub.id, type: 'condNode',
+            parentNode: `g-${item.id}`,
+            position: { x: H_PAD_SUB, y: innerY },
+            style: {
+              width: `${sgItemW}px`,
+              ...(i === 1 ? { height: `${DOC_INELIG_H}px` } : {}),
+            },
+            data: { label: sub.label, accent: 'special' },
+            draggable: false, selectable: false,
+          })
+          innerY += subH + ITEM_GAP
+        })
+        specialY += sgH + ITEM_GAP
+      } else {
+        nodes.push({
+          id: item.id, type: 'condNode',
+          parentNode: 'g-special',
+          position: { x: H_PAD_MID, y: specialY },
+          style: { width: `${SPECIAL_ITEM_W}px` },
+          data: { label: item.label, accent: 'special' },
+          draggable: false, selectable: false,
+        })
+        specialY += ITEM_H + ITEM_GAP
+      }
     })
   }
 
