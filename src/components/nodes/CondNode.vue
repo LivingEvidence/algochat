@@ -1,6 +1,10 @@
 <template>
   <div class="cond-node"
-    :class="[`state-${data.state || 'default'}`, { 'hover-highlight': data.hoverHighlight }]"
+    :class="[
+      `state-${data.state || 'default'}`,
+      data.accent ? `accent-${data.accent}` : null,
+      { 'hover-highlight': data.hoverHighlight },
+    ]"
   >
     <Handle type="target" :position="Position.Left" />
     <Handle type="source" :position="Position.Right" />
@@ -64,6 +68,25 @@ defineProps(['data'])
   border-color: #e2e8f0;
   background: #f8fafc;
   color: #94a3b8;
+}
+
+/* ── accent: special situations (purple) ── */
+.accent-special.state-default {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+.accent-special.state-potential {
+  border: 1px dotted #a78bfa;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+.accent-special.state-potential:hover { background: #ede9fe; }
+.accent-special.state-matched {
+  border: 1.5px solid #7c3aed;
+  background: #ede9fe;
+  color: #4c1d95;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
 }
 
 /* ── hover highlight (from treatment hover) ── */

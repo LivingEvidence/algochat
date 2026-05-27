@@ -429,9 +429,11 @@ const computedNodes = computed(() =>
     if (node.type === 'condNode') {
       // Biomarker Yes / No prompt choices are styled separately
       if (node.data?.interactiveChoice) {
+        const isChosen = bioChoice.value !== null
+          && node.data.choiceValue === bioChoice.value
         return { ...node, data: {
           ...node.data,
-          state: 'potential',
+          state: isChosen ? 'matched' : 'potential',
           hoverHighlight: false,
         } }
       }

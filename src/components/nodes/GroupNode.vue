@@ -4,6 +4,7 @@
       <span v-if="data.num" class="grp-num">{{ data.num }}</span>
       {{ data.label }}
     </div>
+    <div v-if="data.description" class="grp-description">{{ data.description }}</div>
     <slot />
   </div>
 </template>
@@ -44,6 +45,14 @@ const headerStyle = computed(() => {
 .grp-num {
   font-size: 16px;
   line-height: 1;
+}
+.grp-description {
+  padding: 8px 12px 4px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  font-style: italic;
 }
 
 /* Subtle tier — understated outer wrapper (e.g., BioMarker Assessment) */

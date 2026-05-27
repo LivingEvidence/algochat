@@ -45,13 +45,24 @@ const PROMPT_H      = 44
 
 const G1_W          = 200
 const COL2_W        = 280
+const SPECIAL_W     = 280
 const G3_W          = 240
 
 const G1_X          = 40
 const COL2_X        = 290
-const G3_X          = 620
+const SPECIAL_X     = 600
+const G3_X          = 920
 const TOP_Y         = 30
 const COL_GAP_VERT  = 24
+const SPECIAL_DESC_H = 38
+
+// All biomarker condition ids (flattened) — used to detect when the user
+// has made a selection inside the biomarker assessment.
+const BIOMARKER_IDS = new Set()
+BIOMARKER_GROUPS.forEach(g => {
+  if (g.subgroup) g.subgroup.items.forEach(i => BIOMARKER_IDS.add(i.id))
+  ;(g.items || []).forEach(i => BIOMARKER_IDS.add(i.id))
+})
 
 // ── Geometry helpers ─────────────────────────────────────────────
 
@@ -77,11 +88,12 @@ function treatmentGroupHeight(items) {
   return GRP_HEADER_H + V_PAD + items.length * (ITEM_H + ITEM_GAP) + V_PAD
 }
 
-function specialGroupHeight() {
-  return HEADER_H_TOP + V_PAD_TOP
-    + SPECIAL_ITEMS.length * ITEM_H
-    + (SPECIAL_ITEMS.length - 1) * ITEM_GAP
-    + V_PAD_TOP
+function specialGroupHeight(items) {
+  const n = items.length
+  return HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID
+    + n * ITEM_H
+    + (n - 1) * ITEM_GAP
+    + V_PAD_MID
 }
 
 // ── Builder ──────────────────────────────────────────────────────
@@ -113,80 +125,73 @@ export function buildInteractiveNodes(state) {
   // No prior selected → stop here.
   if (!prior) return nodes
 
-  // ─── Biomarker Assessment ───────────────────────────────────────
-  // Filter docetaxel-related condition: special-situation 'Eligible for docetaxel'
-  // is irrelevant when the patient already received docetaxel. We mirror the
-  // All Pathways view's behavior here by hiding that node for those priors.
+  // ─── Biomarker Question (separate from the assessment node) ─────
+  // Always visible once a prior treatment has been chosen — the user can
+  // re-select the Yes/No answer at any time.
+  const Q_INNER_W = COL2_W - 2 * H_PAD_TOP
+  const questionCardH = HEADER_H_TOP + V_PAD_TOP
+    + PROMPT_H + ITEM_GAP
+    + 2 * ITEM_H + ITEM_GAP
+    + V_PAD_TOP
+
+  nodes.push({
+    id: 'g-bio-question', type: 'customGroup',
+    position: { x: COL2_X, y: TOP_Y },
+    style: { width: `${COL2_W}px`, height: `${questionCardH}px` },
+    data: { label: 'Biomarker Assessment Question', color: '#94a3b8', tier: 'subtle' },
+    draggable: false, selectable: false, focusable: false,
+  })
+  nodes.push({
+    id: 'bio-prompt', type: 'promptNode',
+    parentNode: 'g-bio-question',
+    position: { x: H_PAD_TOP, y: HEADER_H_TOP + V_PAD_TOP },
+    style: { width: `${Q_INNER_W}px` },
+    data: { label: 'Has the patient taken any biomarker assessment?' },
+    draggable: false, selectable: false,
+  })
+  const yesY = HEADER_H_TOP + V_PAD_TOP + PROMPT_H + ITEM_GAP
+  nodes.push({
+    id: BIO_YES_ID, type: 'condNode',
+    parentNode: 'g-bio-question',
+    position: { x: H_PAD_TOP, y: yesY },
+    style: { width: `${Q_INNER_W}px` },
+    data: { label: 'Yes', state: 'potential', interactiveChoice: true, choiceValue: 'yes' },
+    draggable: false, selectable: false,
+  })
+  nodes.push({
+    id: BIO_NO_ID, type: 'condNode',
+    parentNode: 'g-bio-question',
+    position: { x: H_PAD_TOP, y: yesY + ITEM_H + ITEM_GAP },
+    style: { width: `${Q_INNER_W}px` },
+    data: { label: 'No', state: 'potential', interactiveChoice: true, choiceValue: 'no' },
+    draggable: false, selectable: false,
+  })
+
+  if (bioChoice === null) return nodes
+
+  // ─── Biomarker Assessment (only when 'yes') ─────────────────────
   const docPriors = new Set(['n1-adt-doc', 'n1-adt-arpi-doc'])
   const visibleSpecialItems = SPECIAL_ITEMS.filter(
     item => !(docPriors.has(prior) && item.id === 'n2-doc-eligible'),
   )
 
-  // Compute biomarker group height for either layout
   const midHeights = BIOMARKER_GROUPS.map(midGroupHeight)
   const bioExpandedH = HEADER_H_TOP + V_PAD_TOP
     + midHeights.reduce((a, b) => a + b, 0)
     + (BIOMARKER_GROUPS.length - 1) * GROUP_GAP
     + V_PAD_TOP
 
-  // Compact (Yes/No) biomarker prompt height
-  const bioCompactH = HEADER_H_TOP + V_PAD_TOP
-    + PROMPT_H + ITEM_GAP
-    + 2 * ITEM_H + ITEM_GAP
-    + V_PAD_TOP
-
-  if (bioChoice === null) {
-    // Step 1: show only the Yes/No prompt card
-    nodes.push({
-      id: 'g-bio', type: 'customGroup',
-      position: { x: COL2_X, y: TOP_Y },
-      style: { width: `${COL2_W}px`, height: `${bioCompactH}px` },
-      data: { label: 'Biomarker Assessment', color: '#94a3b8', tier: 'subtle' },
-      draggable: false, selectable: false, focusable: false,
-    })
-
-    nodes.push({
-      id: 'bio-prompt', type: 'promptNode',
-      parentNode: 'g-bio',
-      position: { x: H_PAD_TOP, y: HEADER_H_TOP + V_PAD_TOP },
-      style: { width: `${COL2_W - 2 * H_PAD_TOP}px` },
-      data: { label: 'Has the patient taken any biomarker assessment?' },
-      draggable: false, selectable: false,
-    })
-
-    const yesY = HEADER_H_TOP + V_PAD_TOP + PROMPT_H + ITEM_GAP
-    nodes.push({
-      id: BIO_YES_ID, type: 'condNode',
-      parentNode: 'g-bio',
-      position: { x: H_PAD_TOP, y: yesY },
-      style: { width: `${COL2_W - 2 * H_PAD_TOP}px` },
-      data: { label: 'Yes', state: 'potential', interactiveChoice: true },
-      draggable: false, selectable: false,
-    })
-    nodes.push({
-      id: BIO_NO_ID, type: 'condNode',
-      parentNode: 'g-bio',
-      position: { x: H_PAD_TOP, y: yesY + ITEM_H + ITEM_GAP },
-      style: { width: `${COL2_W - 2 * H_PAD_TOP}px` },
-      data: { label: 'No', state: 'potential', interactiveChoice: true },
-      draggable: false, selectable: false,
-    })
-
-    return nodes
-  }
-
-  // bioChoice === 'yes' or 'no' → expanded layout
-  let specialY = TOP_Y
+  const bioBlockTopY = TOP_Y + questionCardH + COL_GAP_VERT
+  let col2BottomY = TOP_Y + questionCardH
 
   if (bioChoice === 'yes') {
-    // Expanded biomarker block
     const BIO_W = COL2_W
     const MID_W = BIO_W - 2 * H_PAD_TOP
     const MID_ITEM_W = MID_W - 2 * H_PAD_MID
 
     nodes.push({
       id: 'g-bio', type: 'customGroup',
-      position: { x: COL2_X, y: TOP_Y },
+      position: { x: COL2_X, y: bioBlockTopY },
       style: { width: `${BIO_W}px`, height: `${bioExpandedH}px` },
       data: {
         label: 'Biomarker Assessment',
@@ -252,49 +257,50 @@ export function buildInteractiveNodes(state) {
       midY += midH + GROUP_GAP
     })
 
-    specialY = TOP_Y + bioExpandedH + COL_GAP_VERT
+    col2BottomY = bioBlockTopY + bioExpandedH
   }
 
   // ─── Special Situations ────────────────────────────────────────
-  const specialItemsCount = visibleSpecialItems.length
-  const specialGroupH = HEADER_H_TOP + V_PAD_TOP
-    + specialItemsCount * ITEM_H
-    + (specialItemsCount - 1) * ITEM_GAP
-    + V_PAD_TOP
-  const SPECIAL_ITEM_W = COL2_W - 2 * H_PAD_TOP
+  // Shown when:
+  //   • bioChoice === 'no', OR
+  //   • bioChoice === 'yes' AND user has selected at least one item
+  //     inside the biomarker assessment.
+  const hasBiomarkerSelection = condIds
+    && [...condIds].some(id => BIOMARKER_IDS.has(id))
+  const showSpecial = bioChoice === 'no'
+    || (bioChoice === 'yes' && hasBiomarkerSelection)
 
-  // When choice is 'no', the "Special Situations" group sits at the top
-  // (where biomarker would be), preceded by a small question prompt.
-  if (bioChoice === 'no') {
-    // small prompt above the special situations card
-    const promptHeader = PROMPT_H
+  const specialGroupH = specialGroupHeight(visibleSpecialItems)
+  const SPECIAL_ITEM_W = SPECIAL_W - 2 * H_PAD_MID
+  const SPECIAL_COLOR  = '#8b5cf6'
+
+  if (showSpecial) {
     nodes.push({
-      id: 'special-prompt', type: 'promptNode',
-      position: { x: COL2_X, y: TOP_Y },
-      style: { width: `${COL2_W}px`, height: `${promptHeader}px` },
-      data: { label: 'Does the patient have any of the following situations?' },
-      draggable: false, selectable: false,
+      id: 'g-special', type: 'customGroup',
+      position: { x: SPECIAL_X, y: TOP_Y },
+      style: { width: `${SPECIAL_W}px`, height: `${specialGroupH}px` },
+      data: {
+        label: 'Special Situations',
+        color: SPECIAL_COLOR,
+        tier: 'mid',
+        description: 'Clinical scenarios that may override the standard pathway — select any that apply.',
+      },
+      draggable: false, selectable: false, focusable: false,
     })
-    specialY = TOP_Y + promptHeader + COL_GAP_VERT / 2
+    visibleSpecialItems.forEach((item, i) => {
+      nodes.push({
+        id: item.id, type: 'condNode',
+        parentNode: 'g-special',
+        position: {
+          x: H_PAD_MID,
+          y: HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID + i * (ITEM_H + ITEM_GAP),
+        },
+        style: { width: `${SPECIAL_ITEM_W}px` },
+        data: { label: item.label, accent: 'special' },
+        draggable: false, selectable: false,
+      })
+    })
   }
-
-  nodes.push({
-    id: 'g-special', type: 'customGroup',
-    position: { x: COL2_X, y: specialY },
-    style: { width: `${COL2_W}px`, height: `${specialGroupH}px` },
-    data: { label: 'Special Situations', color: '#94a3b8', tier: 'subtle' },
-    draggable: false, selectable: false, focusable: false,
-  })
-  visibleSpecialItems.forEach((item, i) => {
-    nodes.push({
-      id: item.id, type: 'condNode',
-      parentNode: 'g-special',
-      position: { x: H_PAD_TOP, y: HEADER_H_TOP + V_PAD_TOP + i * (ITEM_H + ITEM_GAP) },
-      style: { width: `${SPECIAL_ITEM_W}px` },
-      data: { label: item.label },
-      draggable: false, selectable: false,
-    })
-  })
 
   // ─── Treatment Options ─────────────────────────────────────────
   // Show only after the user has selected at least one biomarker / special
@@ -308,11 +314,12 @@ export function buildInteractiveNodes(state) {
   const visibleTreatments = TREATMENT_ITEMS.filter(t => reachableTreatIds.has(t.id))
   const g3H = treatmentGroupHeight(visibleTreatments)
 
-  // Vertically align treatments roughly with the biomarker section's center
-  const treatmentsAreaH =
-    (bioChoice === 'yes'
-      ? bioExpandedH + COL_GAP_VERT + specialGroupH
-      : specialGroupH + PROMPT_H + COL_GAP_VERT / 2)
+  // Vertically center treatments against the tallest column to the left
+  const leftMaxY = Math.max(
+    col2BottomY,
+    showSpecial ? TOP_Y + specialGroupH : TOP_Y,
+  )
+  const treatmentsAreaH = leftMaxY - TOP_Y
   const g3Y = TOP_Y + Math.max(0, (treatmentsAreaH - g3H) / 2)
 
   nodes.push({
