@@ -353,7 +353,7 @@ export function buildInteractiveNodes(state) {
         label: 'Special Situations',
         color: SPECIAL_COLOR,
         tier: 'mid',
-        description: 'Clinical scenarios that may override the standard pathway — select any that apply.',
+        description: 'Select any scenarios that apply to this case.',
       },
       draggable: false, selectable: false, focusable: false,
     })
