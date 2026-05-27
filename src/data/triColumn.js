@@ -65,20 +65,22 @@ export const SPECIAL_ITEMS = [
 ]
 
 export const TREATMENT_ITEMS = [
+  // Special-situation-aligned options first
+  { id: 'n3-rt-surgery',  label: 'Radiation / Surgery',        cat: 'local' },
+  { id: 'n3-sipuleucel',  label: 'Sipuleucel-T',               cat: 'immuno' },
+  { id: 'n3-ra223',       label: 'Radium 223',                 cat: 'radio' },
+  { id: 'n3-docetaxel',   label: 'Docetaxel',                  cat: 'chemo' },
+  // Remaining options
   { id: 'n3-talazo-enza', label: 'Talazoparib + enzalutamide', cat: 'parp' },
   { id: 'n3-olapa-abi',   label: 'Olaparib + abiraterone',     cat: 'parp' },
   { id: 'n3-nira-abi',    label: 'Niraparib + abiraterone',    cat: 'parp' },
   { id: 'n3-olaparib',    label: 'Olaparib',                   cat: 'parp' },
   { id: 'n3-abi-pred',    label: 'Abiraterone + prednisone',   cat: 'arpi' },
   { id: 'n3-enza',        label: 'Enzalutamide',               cat: 'arpi' },
-  { id: 'n3-docetaxel',   label: 'Docetaxel',                  cat: 'chemo' },
   { id: 'n3-cabazi',      label: 'Cabazitaxel',                cat: 'chemo' },
   { id: 'n3-ra223-enza',  label: 'Radium 223 + enzalutamide',  cat: 'radio' },
   { id: 'n3-lu-psma',     label: '¹⁷⁷Lu-PSMA-617',            cat: 'targeted' },
   { id: 'n3-pembro',      label: 'Pembrolizumab',              cat: 'immuno' },
-  { id: 'n3-rt-surgery',  label: 'Radiation / Surgery',        cat: 'local' },
-  { id: 'n3-sipuleucel',  label: 'Sipuleucel-T',               cat: 'immuno' },
-  { id: 'n3-ra223',       label: 'Radium 223',                 cat: 'radio' },
 ]
 
 // ── Edge rules per prior treatment ──────────────────────────────

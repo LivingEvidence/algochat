@@ -243,7 +243,10 @@ import {
   buildInteractiveNodes,
   EDGE_RULES,
   TREATMENT_ITEMS,
+  SPECIAL_ITEMS,
 } from '../data/interactiveAlgorithm.js'
+
+const SPECIAL_IDS = new Set(SPECIAL_ITEMS.map(item => item.id))
 import {
   useInteractiveAlgorithmStore,
   BIO_YES_ID,
@@ -505,7 +508,9 @@ const computedEdges = computed(() => {
   }) : []
 
   // ── Prior → Cond edges ──
+  // Skip Special Situations — they do not depend on the prior treatment.
   const activeFromIds = [...new Set(visibleRules.map(r => r.from))]
+    .filter(id => !SPECIAL_IDS.has(id))
   const n1n2 = activeFromIds.map((condId, i) => {
     const id = `e12-${selectedPrior.value}-${i}`
     return matchedConds.has(condId)
