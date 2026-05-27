@@ -175,10 +175,32 @@ export function buildInteractiveNodes(state) {
     item => !(docPriors.has(prior) && item.id === 'n2-doc-eligible'),
   )
 
-  const midHeights = BIOMARKER_GROUPS.map(midGroupHeight)
+  // Customize HRR Testing items based on prior treatment. The nested
+  // "HRR Positive" subgroup is flattened — we either expose the
+  // BRCA / non-BRCA split (post-ADT) or just a single HRR positive row
+  // (post-ARPI), since the upstream therapy already narrows the
+  // clinically relevant distinctions.
+  const arpiPriors = new Set(['n1-adt-arpi', 'n1-adt-arpi-doc'])
+  const hrrItems = arpiPriors.has(prior)
+    ? [
+        { id: 'n2-hrr-pos', label: 'HRR positive' },
+        { id: 'n2-hrr-neg', label: 'HRR negative' },
+      ]
+    : [
+        { id: 'n2-brca',     label: 'BRCA1 or BRCA2 positive' },
+        { id: 'n2-non-brca', label: 'Non-BRCA HRR positive' },
+        { id: 'n2-hrr-neg',  label: 'HRR negative' },
+      ]
+  const biomarkerGroups = BIOMARKER_GROUPS.map(group =>
+    group.id === 'hrr'
+      ? { id: 'hrr', label: 'HRR Testing', items: hrrItems }
+      : group,
+  )
+
+  const midHeights = biomarkerGroups.map(midGroupHeight)
   const bioExpandedH = HEADER_H_TOP + V_PAD_TOP
     + midHeights.reduce((a, b) => a + b, 0)
-    + (BIOMARKER_GROUPS.length - 1) * GROUP_GAP
+    + (biomarkerGroups.length - 1) * GROUP_GAP
     + V_PAD_TOP
 
   const bioBlockTopY = TOP_Y + questionCardH + COL_GAP_VERT
@@ -202,7 +224,7 @@ export function buildInteractiveNodes(state) {
     })
 
     let midY = HEADER_H_TOP + V_PAD_TOP
-    BIOMARKER_GROUPS.forEach((group, gi) => {
+    biomarkerGroups.forEach((group, gi) => {
       const midH = midHeights[gi]
       const midId = `g-${group.id}`
       nodes.push({
