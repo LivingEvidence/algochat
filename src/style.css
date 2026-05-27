@@ -2,3 +2,19 @@
 html, body { height: 100%; margin: 0; padding: 0; }
 body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; }
 #app { height: 100%; }
+
+.vue-flow__edges,
+.vue-flow__edge-labels,
+.vue-flow__marker {
+  z-index: 20 !important;
+  pointer-events: none;
+}
+
+.vue-flow__nodes {
+  z-index: 10 !important;
+}
+
+.vue-flow__edge-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
