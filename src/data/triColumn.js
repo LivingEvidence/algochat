@@ -125,6 +125,8 @@ export const EDGE_RULES = {
     { from: 'n2-oligo',       to: 'n3-rt-surgery' },
     { from: 'n2-indolent',    to: 'n3-sipuleucel' },
     { from: 'n2-bone',        to: 'n3-ra223' },
+    { from: 'n2-doc-yes',     to: 'n3-docetaxel' },
+    { from: 'n2-doc-no',      to: 'n3-cabazi' },
   ],
   'n1-adt-arpi': [
     { from: 'n2-hrr-pos',     to: 'n3-olaparib' },
@@ -146,6 +148,8 @@ export const EDGE_RULES = {
     { from: 'n2-hrr-neg',     to: 'n3-ra223' },
     { from: 'n2-msi-present', to: 'n3-pembro' },
     { from: 'n2-bone',        to: 'n3-ra223' },
+    { from: 'n2-doc-yes',     to: 'n3-docetaxel' },
+    { from: 'n2-doc-no',      to: 'n3-cabazi' },
   ],
 }
 

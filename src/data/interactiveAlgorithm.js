@@ -196,18 +196,16 @@ export function buildInteractiveNodes(state) {
   if (bioChoice === null) return nodes
 
   // ─── Biomarker Assessment (only when 'yes') ─────────────────────
-  // After triple therapy (ADT + ARPI + Docetaxel) the only special
-  // situation that still applies is bone-predominant symptomatic disease.
-  // After any docetaxel-containing prior, hide the Docetaxel eligibility
-  // subgroup since the question is moot.
-  const docPriors = new Set(['n1-adt-doc', 'n1-adt-arpi-doc'])
+  // After triple therapy (ADT + ARPI + Docetaxel), keep the reduced
+  // special-situation set but continue to show Docetaxel eligibility so
+  // this question is available for every prior treatment pathway.
   let visibleSpecialItems
   if (prior === 'n1-adt-arpi-doc') {
-    visibleSpecialItems = SPECIAL_ITEMS.filter(item => item.id === 'n2-bone')
-  } else {
-    visibleSpecialItems = SPECIAL_ITEMS.filter(
-      item => !(docPriors.has(prior) && item.id === 'sg-doc-elig'),
+    visibleSpecialItems = SPECIAL_ITEMS.filter(item =>
+      item.id === 'n2-bone' || item.id === 'sg-doc-elig'
     )
+  } else {
+    visibleSpecialItems = SPECIAL_ITEMS
   }
 
   // Customize HRR Testing items based on prior treatment. The nested
