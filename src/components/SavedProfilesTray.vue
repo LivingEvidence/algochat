@@ -35,14 +35,12 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { usePatientProfile } from '../composables/usePatientProfile.js'
+import { storeToRefs } from 'pinia'
+import { useAllPathwaysStore } from '../stores/allPathways.js'
 
-const {
-  savedProfiles,
-  loadSavedProfile,
-  deleteSavedProfile,
-  clearSavedProfiles,
-} = usePatientProfile()
+const allPathwaysStore = useAllPathwaysStore()
+const { savedProfiles } = storeToRefs(allPathwaysStore)
+const { loadSavedProfile, deleteSavedProfile, clearSavedProfiles } = allPathwaysStore
 
 const previewLimit = 3
 const expanded = ref(false)

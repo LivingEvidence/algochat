@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { GUIDELINES } from './data/guidelines.js'
 import TriColumnView from './views/TriColumnView.vue'
+import InteractiveAlgorithmView from './views/InteractiveAlgorithmView.vue'
 import ClassicView from './views/ClassicView.vue'
 import OverviewView from './views/OverviewView.vue'
 import DetailView from './views/DetailView.vue'
@@ -18,6 +19,11 @@ export const router = createRouter({
     {
       path: '/all-pathways',
       redirect: '/',
+    },
+    {
+      path: '/interactive-algorithm',
+      name: 'interactive-algorithm',
+      component: InteractiveAlgorithmView,
     },
     {
       path: '/classic',

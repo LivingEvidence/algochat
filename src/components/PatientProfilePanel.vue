@@ -68,11 +68,11 @@
 
 <script setup>
 import { computed } from 'vue'
-import { usePatientProfile, PROFILE_OPTIONS, PRIOR_WITH_DOCETAXEL } from '../composables/usePatientProfile.js'
+import { storeToRefs } from 'pinia'
+import { useAllPathwaysStore, PROFILE_OPTIONS, PRIOR_WITH_DOCETAXEL } from '../stores/allPathways.js'
 
-const {
-  profile, selectedCondIds,
-} = usePatientProfile()
+const allPathwaysStore = useAllPathwaysStore()
+const { profile, selectedCondIds } = storeToRefs(allPathwaysStore)
 
 const visibleSpecialOptions = computed(() =>
   PROFILE_OPTIONS.special.filter(opt =>

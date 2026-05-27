@@ -122,13 +122,11 @@
         </div>
       </header>
       <div class="tool-panel-body">
-        <PatientProfilePanel v-if="activeTool === 'profile'" />
-        <p v-else>{{ activeToolMeta.description }}</p>
+        <p>{{ activeToolMeta.description }}</p>
       </div>
     </aside>
 
-    <section class="flowchart-panel" aria-label="All pathways flowchart">
-      <SavedProfilesTray />
+    <section class="flowchart-panel" aria-label="Interactive algorithm flowchart">
 
       <VueFlow
         :nodes="computedNodes"
@@ -188,6 +186,16 @@
         <template #node-sectionLabel="nodeProps">
           <SectionLabelNode :data="nodeProps.data" />
         </template>
+        <template #node-promptNode="nodeProps">
+          <div class="prompt-node">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="prompt-icon">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7" />
+              <circle cx="12" cy="17" r="0.6" fill="currentColor" />
+            </svg>
+            <span>{{ nodeProps.data.label }}</span>
+          </div>
+        </template>
       </VueFlow>
     </section>
 
@@ -228,42 +236,47 @@ import PriorNode          from '../components/nodes/PriorNode.vue'
 import CondNode           from '../components/nodes/CondNode.vue'
 import TreatNode          from '../components/nodes/TreatNode.vue'
 import SectionLabelNode   from '../components/nodes/SectionLabelNode.vue'
-import PatientProfilePanel from '../components/PatientProfilePanel.vue'
-import SavedProfilesTray from '../components/SavedProfilesTray.vue'
 import ChatPanel from '../components/ChatPanel.vue'
 
 import { storeToRefs } from 'pinia'
-import { buildTriColumnNodes, EDGE_RULES, TREATMENT_ITEMS } from '../data/triColumn.js'
-import { PRIOR_WITH_DOCETAXEL, useAllPathwaysStore } from '../stores/allPathways.js'
+import {
+  buildInteractiveNodes,
+  EDGE_RULES,
+  TREATMENT_ITEMS,
+} from '../data/interactiveAlgorithm.js'
+import {
+  useInteractiveAlgorithmStore,
+  BIO_YES_ID,
+  BIO_NO_ID,
+} from '../stores/interactiveAlgorithm.js'
 
-// ── State ────────────────────────────────────────────────────────
+// ── View-local UI state (not shared) ─────────────────────────────
 const hoveredNodeId = ref(null)
-const selectedTreatmentId = ref(null)
-const flowInstance = ref(null)
-const chatPanel = ref(null)
-const activeTool = ref('profile')
-const BASE_NODES    = buildTriColumnNodes()
+const flowInstance  = ref(null)
+const chatPanel     = ref(null)
+const activeTool    = ref(null)
+const showMiniMap   = ref(false)
 
-const allPathwaysStore = useAllPathwaysStore()
+// ── Workflow state from Pinia store (isolated per-view) ──────────
+const interactiveStore = useInteractiveAlgorithmStore()
 const {
-  profile,
-  selectedPriorId,
+  selectedPrior,
+  bioChoice,
   selectedCondIds,
-} = storeToRefs(allPathwaysStore)
-const { toggleCondById, resetProfile, saveCurrentProfile } = allPathwaysStore
-const showMiniMap = ref(false)
+  selectedTreatmentId,
+  activeCondIds,
+  activeTreatIds,
+  knownCondIds,
+  matchedTreatIds,
+} = storeToRefs(interactiveStore)
 
-// selectedPrior is now driven by the profile panel
-const selectedPrior = selectedPriorId
-
-const PRIOR_NODE_TO_KEY = {
-  'n1-adt': 'adt', 'n1-adt-doc': 'adt_doc',
-  'n1-adt-arpi': 'adt_arpi', 'n1-adt-arpi-doc': 'adt_arpi_doc',
+function resetProfile() {
+  interactiveStore.reset()
+  refitFlowchart()
 }
-
-const selectedPriorHasDocetaxel = computed(() => {
-  return PRIOR_WITH_DOCETAXEL.has(profile.value.prior)
-})
+function saveCurrentProfile() {
+  // The interactive view does not currently persist profiles.
+}
 
 const selectedTreatment = computed(() =>
   TREATMENT_ITEMS.find(item => item.id === selectedTreatmentId.value) || null
@@ -290,7 +303,7 @@ const TOOL_META = {
   },
   profile: {
     label: 'Patient profile',
-    description: '',
+    description: 'Make selections directly on the canvas. Use Reset to start the guided workflow from the beginning.',
   },
   evidence: {
     label: 'Evidence review',
@@ -308,19 +321,39 @@ const TOOL_META = {
 
 const activeToolMeta = computed(() => activeTool.value ? TOOL_META[activeTool.value] : null)
 
-// ── Selection handlers ───────────────────────────────────────────
+// ── Selection handlers (delegate to store, then refit canvas) ────
 function selectPrior(id) {
-  const key = PRIOR_NODE_TO_KEY[id]
-  if (key) profile.value = { ...profile.value, prior: profile.value.prior === key ? null : key }
+  interactiveStore.selectPrior(id)
+  refitFlowchart()
+}
+
+function setBioChoice(choice) {
+  interactiveStore.setBioChoice(choice)
+  refitFlowchart()
+}
+
+function toggleCondById(id) {
+  interactiveStore.toggleCondById(id)
+  refitFlowchart()
 }
 
 function onNodeClick({ node }) {
-  if (node.type === 'priorNode') selectPrior(node.id)
-  if (node.type === 'condNode' && selectedPrior.value && activeCondIds.value.has(node.id)) {
-    toggleCondById(node.id)
+  if (node.type === 'priorNode') {
+    selectPrior(node.id)
+    return
+  }
+  // Biomarker question Yes / No
+  if (node.id === BIO_YES_ID) { setBioChoice('yes'); return }
+  if (node.id === BIO_NO_ID)  { setBioChoice('no');  return }
+
+  if (node.type === 'condNode' && selectedPrior.value && bioChoice.value !== null) {
+    // Only toggle real condition / special-situation nodes (tied to EDGE_RULES)
+    if (knownCondIds.value.has(node.id)) {
+      toggleCondById(node.id)
+    }
   }
   if (node.type === 'treatNode') {
-    selectedTreatmentId.value = node.id
+    interactiveStore.selectTreatment(node.id)
     refitFlowchart()
   }
 }
@@ -339,7 +372,7 @@ function onPaneReady(instance) {
 }
 
 function closeEvidencePanel() {
-  selectedTreatmentId.value = null
+  interactiveStore.clearTreatment()
   refitFlowchart()
 }
 
@@ -367,33 +400,6 @@ async function refitFlowchart() {
   }, 260)
 }
 
-// ── Derived node sets ────────────────────────────────────────────
-const activeCondIds = computed(() => {
-  const s = new Set()
-  if (selectedPrior.value) {
-    EDGE_RULES[selectedPrior.value]?.forEach(r => s.add(r.from))
-  }
-  return s
-})
-
-const activeTreatIds = computed(() => {
-  const s = new Set()
-  if (selectedPrior.value) {
-    EDGE_RULES[selectedPrior.value]?.forEach(r => s.add(r.to))
-  }
-  return s
-})
-
-// Treatments that have at least one matched (patient-confirmed) condition
-const matchedTreatIds = computed(() => {
-  const s = new Set()
-  if (!selectedPrior.value || selectedCondIds.value.size === 0) return s
-  EDGE_RULES[selectedPrior.value]?.forEach(r => {
-    if (selectedCondIds.value.has(r.from)) s.add(r.to)
-  })
-  return s
-})
-
 // ── Hover-linked nodes (only highlight nodes that are potential or matched) ─
 const hoverLinkedIds = computed(() => {
   const s = new Set()
@@ -407,47 +413,59 @@ const hoverLinkedIds = computed(() => {
   return s
 })
 
-// ── Computed nodes (with active/dimmed state) ────────────────────
+// ── Step-by-step base nodes (depend on workflow state) ───────────
+const baseNodes = computed(() => buildInteractiveNodes({
+  prior:     selectedPrior.value,
+  bioChoice: bioChoice.value,
+  condIds:   selectedCondIds.value,
+}))
+
+// ── Computed nodes (with active/dimmed state overlay) ─────────────
 const computedNodes = computed(() =>
-  BASE_NODES
-    .filter(node => !(selectedPriorHasDocetaxel.value && node.id === 'n2-doc-eligible'))
-    .map(node => {
-      if (node.type === 'priorNode') {
-        return { ...node, data: { ...node.data, selected: node.id === selectedPrior.value } }
-      }
-      if (node.type === 'condNode') {
-        const hasSel = !!selectedPrior.value
-        const inPath = activeCondIds.value.has(node.id)
+  baseNodes.value.map(node => {
+    if (node.type === 'priorNode') {
+      return { ...node, data: { ...node.data, selected: node.id === selectedPrior.value } }
+    }
+    if (node.type === 'condNode') {
+      // Biomarker Yes / No prompt choices are styled separately
+      if (node.data?.interactiveChoice) {
         return { ...node, data: {
           ...node.data,
-          state:          !hasSel ? 'default'
-                        : !inPath ? 'disabled'
-                        : selectedCondIds.value.has(node.id) ? 'matched'
-                        : 'potential',
-          hoverHighlight: hoverLinkedIds.value.has(node.id),
-        }}
+          state: 'potential',
+          hoverHighlight: false,
+        } }
       }
-      if (node.type === 'treatNode') {
-        const hasSel = !!selectedPrior.value
-        const inPath = activeTreatIds.value.has(node.id)
-        return { ...node, data: {
-          ...node.data,
-          state:          !hasSel ? 'default'
-                        : !inPath ? 'disabled'
-                        : matchedTreatIds.value.has(node.id) ? 'matched'
-                        : 'potential',
-          selected: node.id === selectedTreatmentId.value,
-          hoverHighlight: hoverLinkedIds.value.has(node.id),
-        }}
-      }
-      return node
-    })
+      const inPath = activeCondIds.value.has(node.id)
+      return { ...node, data: {
+        ...node.data,
+        state:          !inPath ? 'default'
+                      : selectedCondIds.value.has(node.id) ? 'matched'
+                      : 'potential',
+        hoverHighlight: hoverLinkedIds.value.has(node.id),
+      }}
+    }
+    if (node.type === 'treatNode') {
+      const inPath = activeTreatIds.value.has(node.id)
+      return { ...node, data: {
+        ...node.data,
+        state:          !inPath ? 'default'
+                      : matchedTreatIds.value.has(node.id) ? 'matched'
+                      : 'potential',
+        selected: node.id === selectedTreatmentId.value,
+        hoverHighlight: hoverLinkedIds.value.has(node.id),
+      }}
+    }
+    return node
+  })
 )
 
 // ── Computed edges (appear only after selection) ─────────────────
 const computedEdges = computed(() => {
   if (!selectedPrior.value) return []
 
+  // Set of node ids that are actually rendered right now
+  const presentIds = new Set(baseNodes.value.map(n => n.id))
+  const treatmentsVisible = presentIds.has('g3')
   const rules        = EDGE_RULES[selectedPrior.value] || []
   const matchedConds = selectedCondIds.value
   const matchedTreat = matchedTreatIds.value
@@ -472,17 +490,20 @@ const computedEdges = computed(() => {
     markerEnd: { type: 'arrowclosed', color: '#2d6a4f', width: 16, height: 16 },
   })
 
-  // ── Cond → Treatment edges ──
-  const n2n3 = rules.map((rule, i) => {
+  // Filter EDGE_RULES to those whose endpoints are currently rendered
+  const visibleRules = rules.filter(r => presentIds.has(r.from) && presentIds.has(r.to))
+
+  // ── Cond → Treatment edges (only after treatments are revealed) ──
+  const n2n3 = treatmentsVisible ? visibleRules.map((rule, i) => {
     const id = `e23-${selectedPrior.value}-${i}`
     const isMatched = matchedConds.has(rule.from) && matchedTreat.has(rule.to)
     return isMatched
       ? edgeMatched(id, rule.from, rule.to)
       : edgePotential(id, rule.from, rule.to)
-  })
+  }) : []
 
   // ── Prior → Cond edges ──
-  const activeFromIds = [...new Set(rules.map(r => r.from))]
+  const activeFromIds = [...new Set(visibleRules.map(r => r.from))]
   const n1n2 = activeFromIds.map((condId, i) => {
     const id = `e12-${selectedPrior.value}-${i}`
     return matchedConds.has(condId)
@@ -727,6 +748,32 @@ const computedEdges = computed(() => {
 .tri-canvas {
   flex: 1;
   min-width: 0;
+}
+
+.prompt-node {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px dashed #94a3b8;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.prompt-node .prompt-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: #64748b;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .minimap-control {
