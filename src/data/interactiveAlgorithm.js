@@ -53,7 +53,7 @@ const COL2_X        = 290   // Question + Biomarker column
 const SPECIAL_X     = 600   // Special Situations column
 const G3_X          = 920   // Treatment Options column
 const TOP_Y         = 30
-const SPECIAL_Y     = -40
+const SPECIAL_Y     = -90
 const COL_GAP_VERT  = 24
 const SPECIAL_DESC_H = 38
 
