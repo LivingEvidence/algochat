@@ -196,12 +196,14 @@ export function buildInteractiveNodes(state) {
   if (bioChoice === null) return nodes
 
   // ─── Biomarker Assessment (only when 'yes') ─────────────────────
-  // After triple therapy (ADT + ARPI + Docetaxel), keep the reduced
-  // special-situation set but continue to show Docetaxel eligibility so
-  // this question is available for every prior treatment pathway.
+  // After triple therapy (ADT + ARPI + Docetaxel), keep a reduced
+  // special-situation set that excludes biomarker-specific options
+  // (MSI / TMB / HRR) but retains Oligometastatic disease, Indolent
+  // disease, Bone-predominant disease, and chemotherapy eligibility.
   let visibleSpecialItems
   if (prior === 'n1-adt-arpi-doc') {
     visibleSpecialItems = SPECIAL_ITEMS.filter(item =>
+      item.id === 'n2-oligo' || item.id === 'n2-indolent' ||
       item.id === 'n2-bone' || item.id === 'sg-doc-elig'
     )
   } else {
