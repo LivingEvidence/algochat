@@ -110,8 +110,15 @@
         <h2>{{ activeToolMeta.label }}</h2>
         <div class="tool-panel-actions">
           <template v-if="activeTool === 'profile'">
+            <button
+              v-if="savedProfiles.length"
+              type="button"
+              class="tool-panel-action secondary"
+              @click="clearSavedProfiles"
+            >
+              Clear All
+            </button>
             <button type="button" class="tool-panel-action secondary" @click="resetProfile">Reset</button>
-            <button type="button" class="tool-panel-action primary" @click="saveCurrentProfile()">Save</button>
           </template>
           <button type="button" class="tool-panel-close" :title="`Close ${activeToolMeta.label}`" :aria-label="`Close ${activeToolMeta.label}`" @click="closeToolPanel">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -122,11 +129,23 @@
         </div>
       </header>
       <div class="tool-panel-body">
-        <p>{{ activeToolMeta.description }}</p>
+        <InteractiveProfilePanel
+          v-if="activeTool === 'profile'"
+          @profile-loaded="refitFlowchart"
+        />
+        <p v-else>{{ activeToolMeta.description }}</p>
       </div>
     </aside>
 
     <section class="flowchart-panel" aria-label="Interactive algorithm flowchart">
+      <button
+        v-if="treatmentOptionsVisible"
+        type="button"
+        class="save-profile-fab"
+        @click="saveVisibleProfile"
+      >
+        Save Profile
+      </button>
 
       <VueFlow
         :nodes="computedNodes"
@@ -240,6 +259,7 @@ import CondNode           from '../components/nodes/CondNode.vue'
 import TreatNode          from '../components/nodes/TreatNode.vue'
 import SectionLabelNode   from '../components/nodes/SectionLabelNode.vue'
 import BioQuestionNode    from '../components/nodes/BioQuestionNode.vue'
+import InteractiveProfilePanel from '../components/InteractiveProfilePanel.vue'
 import ChatPanel from '../components/ChatPanel.vue'
 
 import { storeToRefs } from 'pinia'
@@ -273,14 +293,18 @@ const {
   activeTreatIds,
   knownCondIds,
   matchedTreatIds,
+  savedProfiles,
 } = storeToRefs(interactiveStore)
+const { clearSavedProfiles } = interactiveStore
 
 function resetProfile() {
   interactiveStore.reset()
   refitFlowchart()
 }
-function saveCurrentProfile() {
-  // The interactive view does not currently persist profiles.
+function saveVisibleProfile() {
+  interactiveStore.saveCurrentProfile()
+  if (activeTool.value !== 'profile') activeTool.value = 'profile'
+  refitFlowchart()
 }
 
 const selectedTreatment = computed(() =>
@@ -307,8 +331,8 @@ const TOOL_META = {
     description: 'Conversation history and prior guideline questions will appear here.',
   },
   profile: {
-    label: 'Patient profile',
-    description: 'Make selections directly on the canvas. Use Reset to start the guided workflow from the beginning.',
+    label: 'Patient Profiles',
+    description: '',
   },
   evidence: {
     label: 'Evidence review',
@@ -430,6 +454,10 @@ const baseNodes = computed(() => buildInteractiveNodes({
   bioChoice: bioChoice.value,
   condIds:   selectedCondIds.value,
 }))
+
+const treatmentOptionsVisible = computed(() =>
+  baseNodes.value.some(node => node.id === 'g3')
+)
 
 // ── Computed nodes (with active/dimmed state overlay) ─────────────
 const computedNodes = computed(() =>
@@ -785,6 +813,30 @@ const computedEdges = computed(() => {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
+}
+.save-profile-fab {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 11;
+  height: 34px;
+  border: 1px solid #1d4ed8;
+  border-radius: 8px;
+  background: #2563eb;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.22);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 13px;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.save-profile-fab:hover {
+  border-color: #1e40af;
+  background: #1d4ed8;
+}
+.save-profile-fab:active {
+  transform: translateY(1px);
 }
 .tri-canvas {
   flex: 1;
