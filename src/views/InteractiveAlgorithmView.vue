@@ -437,6 +437,10 @@ const computedNodes = computed(() =>
     if (node.type === 'priorNode') {
       return { ...node, data: { ...node.data, selected: node.id === selectedPrior.value } }
     }
+    if (node.type === 'bioQuestionNode') {
+      const showSpecialLink = baseNodes.value.some(n => n.id === 'g-special')
+      return { ...node, data: { ...node.data, showSpecialLink } }
+    }
     if (node.type === 'condNode') {
       const inPath = activeCondIds.value.has(node.id)
       return { ...node, data: {
@@ -536,6 +540,16 @@ const computedEdges = computed(() => {
         ? edgeMatchedGreen('e-bq-bio', 'bio-question', 'g-bio')
         : edgePotential('e-bq-bio', 'bio-question', 'g-bio'),
     )
+    groupEdges[groupEdges.length - 1].sourceHandle = 'bio-question-bottom'
+  }
+  if (
+    presentIds.has('bio-question')
+    && presentIds.has('g-special')
+  ) {
+    groupEdges.push({
+      ...edgeMatchedGreen('e-bq-special', 'bio-question', 'g-special'),
+      sourceHandle: 'bio-question-right',
+    })
   }
 
   return [...priorEdges, ...groupEdges, ...n2n3]

@@ -1,7 +1,13 @@
 <template>
   <div class="bio-question">
     <Handle type="target" :position="Position.Left" />
-    <Handle type="source" :position="Position.Bottom" />
+    <Handle id="bio-question-bottom" type="source" :position="Position.Bottom" />
+    <Handle
+      v-if="data.showSpecialLink"
+      id="bio-question-right"
+      type="source"
+      :position="Position.Right"
+    />
     <p class="question">{{ data.label }}</p>
     <div class="choices">
       <button
