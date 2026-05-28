@@ -56,7 +56,7 @@ export const BIOMARKER_GROUPS = [
   },
 ]
 
-// Special situations — most are standalone, but "Docetaxel eligibility"
+// Special situations — most are standalone, but "chemotherapy eligibility"
 // is a sub-group with mutually-exclusive Eligible / Ineligible options.
 export const SPECIAL_ITEMS = [
   { id: 'n2-oligo',    label: 'Oligometastatic disease' },
@@ -64,10 +64,10 @@ export const SPECIAL_ITEMS = [
   { id: 'n2-bone',     label: 'Bone-predominant, symptomatic disease' },
   {
     id: 'sg-doc-elig',
-    label: 'Docetaxel eligibility',
+    label: 'chemotherapy eligibility',
     items: [
-      { id: 'n2-doc-yes', label: 'Eligible' },
-      { id: 'n2-doc-no',  label: 'Ineligible due to comorbidities (neuropathy, edema, lung disease, etc.)' },
+      { id: 'n2-doc-yes', label: 'Eligible for Docetaxel' },
+      { id: 'n2-doc-no',  label: 'Ineligible for Docetaxel due to comorbidities (neuropathy, edema, lung disease, etc.)' },
     ],
   },
 ]
