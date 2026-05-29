@@ -18,6 +18,7 @@ import {
   SPECIAL_ITEMS,
   TREATMENT_ITEMS,
   EDGE_RULES,
+  specialItemsForPrior,
 } from './triColumn.js'
 
 export { EDGE_RULES, TREATMENT_ITEMS, PRIOR_ITEMS, BIOMARKER_GROUPS, SPECIAL_ITEMS }
@@ -77,7 +78,7 @@ export const BIOMARKER_MUTEX_GROUPS = {
 // Special-situation sub-groups (e.g., Docetaxel eligibility) that are
 // also single-select within their group.
 const SPECIAL_MUTEX_GROUPS = {
-  'sg-doc-elig': ['n2-doc-yes', 'n2-doc-no'],
+  'sg-doc-elig': ['n2-doc-yes', 'n2-doc-no', 'n2-caba-yes'],
 }
 
 export const BIOMARKER_MUTEX_BY_ID = {}
@@ -138,9 +139,13 @@ const SPECIAL_WRAPPED_ITEM_H = 52
 
 function specialItemHeight(item) {
   if (item.items) {
-    // sub-group: header + 2 children + paddings
+    const childHeights = item.items.map(sub =>
+      sub.id === 'n2-doc-no' ? DOC_INELIG_H : DOC_ELIG_H
+    )
+    const childrenH = childHeights.reduce((sum, height) => sum + height, 0)
+    const gapsH = Math.max(0, item.items.length - 1) * ITEM_GAP
     return HEADER_H_SUB + V_PAD_SUB
-      + DOC_ELIG_TOP_GAP + DOC_ELIG_H + ITEM_GAP + DOC_INELIG_H
+      + DOC_ELIG_TOP_GAP + childrenH + gapsH
       + V_PAD_SUB
   }
   if (item.id === 'n2-bone') return SPECIAL_WRAPPED_ITEM_H
@@ -203,19 +208,7 @@ export function buildInteractiveNodes(state) {
   if (bioChoice === null) return nodes
 
   // ─── Biomarker Assessment (only when 'yes') ─────────────────────
-  // After triple therapy (ADT + ARPI + Docetaxel), keep a reduced
-  // special-situation set that excludes biomarker-specific options
-  // (MSI / TMB / HRR) but retains Oligometastatic disease, Indolent
-  // disease, Bone-predominant disease, and chemotherapy eligibility.
-  let visibleSpecialItems
-  if (prior === 'n1-adt-arpi-doc') {
-    visibleSpecialItems = SPECIAL_ITEMS.filter(item =>
-      item.id === 'n2-oligo' || item.id === 'n2-indolent' ||
-      item.id === 'n2-bone' || item.id === 'sg-doc-elig'
-    )
-  } else {
-    visibleSpecialItems = SPECIAL_ITEMS
-  }
+  const visibleSpecialItems = specialItemsForPrior(prior)
 
   // Customize HRR Testing items based on prior treatment. The nested
   // "HRR Positive" subgroup is flattened — we either expose the
@@ -396,8 +389,8 @@ export function buildInteractiveNodes(state) {
           draggable: false, selectable: false, focusable: false,
         })
         let innerY = HEADER_H_SUB + V_PAD_SUB + DOC_ELIG_TOP_GAP
-        item.items.forEach((sub, i) => {
-          const subH = i === 0 ? DOC_ELIG_H : DOC_INELIG_H
+        item.items.forEach(sub => {
+          const subH = sub.id === 'n2-doc-no' ? DOC_INELIG_H : DOC_ELIG_H
           nodes.push({
             id: sub.id, type: 'condNode',
             parentNode: `g-${item.id}`,

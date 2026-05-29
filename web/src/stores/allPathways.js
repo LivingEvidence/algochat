@@ -18,7 +18,7 @@ const PROFILE_DEFAULTS = {
   hrr: null,          // 'hrr_pos_general' | 'brca_pos' | 'non_brca_hrr_pos' | 'hrr_neg'
   psma: null,         // 'pos' | 'neg'
   msi: null,          // 'present' | 'absent'
-  special: [],        // array: 'oligo' | 'indolent' | 'bone' | 'doc_eligible'
+  special: [],        // array: 'oligo' | 'indolent' | 'bone' | 'doc_eligible' | 'caba_eligible'
 }
 
 export const PRIOR_MAP = {
@@ -49,7 +49,8 @@ const PROFILE_TO_COND = {
     oligo:        'n2-oligo',
     indolent:     'n2-indolent',
     bone:         'n2-bone',
-    doc_eligible: 'n2-doc-eligible',
+    doc_eligible: 'n2-doc-yes',
+    caba_eligible: 'n2-caba-yes',
   },
 }
 
@@ -79,6 +80,7 @@ export const PROFILE_OPTIONS = {
     { value: 'indolent',     label: 'Indolent disease' },
     { value: 'bone',         label: 'Bone only, symptomatic' },
     { value: 'doc_eligible', label: 'Eligible for docetaxel' },
+    { value: 'caba_eligible', label: 'Eligible for Cabazitaxel' },
   ],
 }
 
@@ -90,6 +92,8 @@ function normalizeProfile(saved) {
     .filter((value, index, arr) => arr.indexOf(value) === index)
   if (PRIOR_WITH_DOCETAXEL.has(merged.prior)) {
     merged.special = merged.special.filter(value => value !== 'doc_eligible')
+  } else {
+    merged.special = merged.special.filter(value => value !== 'caba_eligible')
   }
   return merged
 }
@@ -119,13 +123,19 @@ export const useAllPathwaysStore = defineStore('allPathways', () => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(val)) } catch {}
   }, { deep: true })
 
-  // Auto-clear conflicting "Eligible for docetaxel" when prior already
+  // Keep eligibility options aligned to whether prior treatment already
   // includes docetaxel.
   watch(() => profile.value.prior, prior => {
-    if (!PRIOR_WITH_DOCETAXEL.has(prior) || !profile.value.special.includes('doc_eligible')) return
+    const nextSpecial = PRIOR_WITH_DOCETAXEL.has(prior)
+      ? profile.value.special.filter(value => value !== 'doc_eligible')
+      : profile.value.special.filter(value => value !== 'caba_eligible')
+    if (
+      nextSpecial.length === profile.value.special.length
+      && nextSpecial.every((value, index) => value === profile.value.special[index])
+    ) return
     profile.value = {
       ...profile.value,
-      special: profile.value.special.filter(value => value !== 'doc_eligible'),
+      special: nextSpecial,
     }
   })
 

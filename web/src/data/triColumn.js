@@ -20,6 +20,8 @@ export const PRIOR_ITEMS = [
   { id: 'n1-adt-arpi-doc', label: 'ADT + ARPI + Docetaxel' },
 ]
 
+export const PRIOR_WITH_DOCETAXEL_IDS = new Set(['n1-adt-doc', 'n1-adt-arpi-doc'])
+
 // BioMarker Assessment = HR Testing + PSMA + MSI (nested groups)
 export const BIOMARKER_GROUPS = [
   {
@@ -67,10 +69,32 @@ export const SPECIAL_ITEMS = [
     label: 'chemotherapy eligibility',
     items: [
       { id: 'n2-doc-yes', label: 'Eligible for Docetaxel' },
-      { id: 'n2-doc-no',  label: 'Ineligible for Docetaxel due to comorbidities (neuropathy, edema, lung disease, etc.)' },
+      { id: 'n2-doc-no',  label: 'Ineligible for Docetaxel (E.g., neuropathy)' },
+      { id: 'n2-caba-yes', label: 'Eligible for Cabazitaxel' },
     ],
   },
 ]
+
+export function specialItemsForPrior(prior) {
+  if (PRIOR_WITH_DOCETAXEL_IDS.has(prior)) {
+    return SPECIAL_ITEMS.map(item =>
+      item.id === 'sg-doc-elig'
+        ? {
+            ...item,
+            items: [
+              { id: 'n2-caba-yes', label: 'Eligible for Cabazitaxel' },
+            ],
+          }
+        : item
+    )
+  }
+
+  return SPECIAL_ITEMS.map(item =>
+    item.id === 'sg-doc-elig'
+      ? { ...item, items: item.items.filter(sub => sub.id !== 'n2-caba-yes') }
+      : item
+  )
+}
 
 export const TREATMENT_ITEMS = [
   // Special-situation-aligned options first
@@ -118,15 +142,13 @@ export const EDGE_RULES = {
     { from: 'n2-non-brca',    to: 'n3-talazo-enza' },
     { from: 'n2-hrr-neg',     to: 'n3-abi-pred' },
     { from: 'n2-hrr-neg',     to: 'n3-enza' },
-    { from: 'n2-hrr-neg',     to: 'n3-cabazi' },
     { from: 'n2-hrr-neg',     to: 'n3-ra223-enza' },
     { from: 'n2-psma-pos',    to: 'n3-lu-psma' },
     { from: 'n2-msi-present', to: 'n3-pembro' },
     { from: 'n2-oligo',       to: 'n3-rt-surgery' },
     { from: 'n2-indolent',    to: 'n3-sipuleucel' },
     { from: 'n2-bone',        to: 'n3-ra223' },
-    { from: 'n2-doc-yes',     to: 'n3-docetaxel' },
-    { from: 'n2-doc-no',      to: 'n3-cabazi' },
+    { from: 'n2-caba-yes',    to: 'n3-cabazi' },
   ],
   'n1-adt-arpi': [
     { from: 'n2-hrr-pos',     to: 'n3-olaparib' },
@@ -143,13 +165,12 @@ export const EDGE_RULES = {
   'n1-adt-arpi-doc': [
     { from: 'n2-psma-pos',    to: 'n3-lu-psma' },
     { from: 'n2-hrr-pos',     to: 'n3-olaparib' },
-    { from: 'n2-hrr-neg',     to: 'n3-cabazi' },
-    { from: 'n2-psma-neg',    to: 'n3-cabazi' },
     { from: 'n2-hrr-neg',     to: 'n3-ra223' },
     { from: 'n2-msi-present', to: 'n3-pembro' },
+    { from: 'n2-oligo',       to: 'n3-rt-surgery' },
+    { from: 'n2-indolent',    to: 'n3-sipuleucel' },
     { from: 'n2-bone',        to: 'n3-ra223' },
-    { from: 'n2-doc-yes',     to: 'n3-docetaxel' },
-    { from: 'n2-doc-no',      to: 'n3-cabazi' },
+    { from: 'n2-caba-yes',    to: 'n3-cabazi' },
   ],
 }
 
@@ -157,6 +178,7 @@ export const EDGE_RULES = {
 
 export function buildTriColumnNodes() {
   const nodes = []
+  const flatSpecialItems = SPECIAL_ITEMS.flatMap(item => item.items || [item])
 
   // ────────── Width plan ──────────
   const G1_W = 200
@@ -194,8 +216,8 @@ export function buildTriColumnNodes() {
     + V_PAD_TOP
 
   const specialGroupH = HEADER_H_TOP + V_PAD_TOP
-    + SPECIAL_ITEMS.length * ITEM_H
-    + (SPECIAL_ITEMS.length - 1) * ITEM_GAP
+    + flatSpecialItems.length * ITEM_H
+    + (flatSpecialItems.length - 1) * ITEM_GAP
     + V_PAD_TOP
   const specialsTotalH = specialGroupH
 
@@ -314,7 +336,7 @@ export function buildTriColumnNodes() {
     data: { label: 'Special Situations', color: '#94a3b8', tier: 'subtle' },
     draggable: false, selectable: false, focusable: false,
   })
-  SPECIAL_ITEMS.forEach((item, i) => {
+  flatSpecialItems.forEach((item, i) => {
     nodes.push({
       id: item.id, type: 'condNode',
       parentNode: 'g-special',

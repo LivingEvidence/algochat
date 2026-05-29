@@ -233,8 +233,8 @@ import SavedProfilesTray from '../components/SavedProfilesTray.vue'
 import ChatPanel from '../components/ChatPanel.vue'
 
 import { storeToRefs } from 'pinia'
-import { buildTriColumnNodes, EDGE_RULES, TREATMENT_ITEMS } from '../data/triColumn.js'
-import { PRIOR_WITH_DOCETAXEL, useAllPathwaysStore } from '../stores/allPathways.js'
+import { buildTriColumnNodes, EDGE_RULES, TREATMENT_ITEMS, specialItemsForPrior } from '../data/triColumn.js'
+import { useAllPathwaysStore } from '../stores/allPathways.js'
 
 // ── State ────────────────────────────────────────────────────────
 const hoveredNodeId = ref(null)
@@ -261,8 +261,13 @@ const PRIOR_NODE_TO_KEY = {
   'n1-adt-arpi': 'adt_arpi', 'n1-adt-arpi-doc': 'adt_arpi_doc',
 }
 
-const selectedPriorHasDocetaxel = computed(() => {
-  return PRIOR_WITH_DOCETAXEL.has(profile.value.prior)
+const visibleSpecialIds = computed(() => {
+  if (!selectedPrior.value) return null
+  return new Set(
+    specialItemsForPrior(selectedPrior.value)
+      .flatMap(item => item.items || [item])
+      .map(item => item.id)
+  )
 })
 
 const selectedTreatment = computed(() =>
@@ -320,6 +325,7 @@ function onNodeClick({ node }) {
     toggleCondById(node.id)
   }
   if (node.type === 'treatNode') {
+    if (node.id === 'n3-cabazi' && !matchedTreatIds.value.has(node.id)) return
     selectedTreatmentId.value = node.id
     refitFlowchart()
   }
@@ -410,7 +416,11 @@ const hoverLinkedIds = computed(() => {
 // ── Computed nodes (with active/dimmed state) ────────────────────
 const computedNodes = computed(() =>
   BASE_NODES
-    .filter(node => !(selectedPriorHasDocetaxel.value && node.id === 'n2-doc-eligible'))
+    .filter(node =>
+      node.parentNode !== 'g-special'
+      || !visibleSpecialIds.value
+      || visibleSpecialIds.value.has(node.id)
+    )
     .map(node => {
       if (node.type === 'priorNode') {
         return { ...node, data: { ...node.data, selected: node.id === selectedPrior.value } }

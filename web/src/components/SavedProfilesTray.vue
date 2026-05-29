@@ -56,7 +56,10 @@ function summarize(snap) {
   if (snap.hrr) parts.push(snap.hrr.replace(/_/g, ' '))
   if (snap.psma) parts.push('PSMA ' + snap.psma)
   if (snap.msi) parts.push('MSI ' + snap.msi)
-  const specialMap = { doc_eligible: 'Doc eligible' }
+  const specialMap = {
+    doc_eligible: 'Doc eligible',
+    caba_eligible: 'Cabazitaxel eligible',
+  }
   snap.special?.forEach(s => parts.push(specialMap[s] || s))
   return parts.join(' · ') || 'Empty profile'
 }

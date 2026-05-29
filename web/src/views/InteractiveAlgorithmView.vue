@@ -399,6 +399,7 @@ function onNodeClick({ node }) {
     selectCondNode(node.id, node.data)
   }
   if (node.type === 'treatNode') {
+    if (node.id === 'n3-cabazi' && !matchedTreatIds.value.has(node.id)) return
     interactiveStore.selectTreatment(node.id)
     refitFlowchart()
   }

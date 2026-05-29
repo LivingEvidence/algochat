@@ -75,9 +75,9 @@ const allPathwaysStore = useAllPathwaysStore()
 const { profile, selectedCondIds } = storeToRefs(allPathwaysStore)
 
 const visibleSpecialOptions = computed(() =>
-  PROFILE_OPTIONS.special.filter(opt =>
-    opt.value !== 'doc_eligible' || !PRIOR_WITH_DOCETAXEL.has(profile.value.prior)
-  )
+  PRIOR_WITH_DOCETAXEL.has(profile.value.prior)
+    ? PROFILE_OPTIONS.special.filter(opt => opt.value !== 'doc_eligible')
+    : PROFILE_OPTIONS.special.filter(opt => opt.value !== 'caba_eligible')
 )
 
 function prevIsIndented(opt) {
