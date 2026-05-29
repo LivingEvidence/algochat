@@ -122,6 +122,32 @@ export const NON_RECOMMENDING_COND_IDS = new Set([
   'n2-msi-absent',
 ])
 
+const HRR_NEG_ARPI_PRIORS = new Set(['n1-adt', 'n1-adt-doc'])
+const HRR_NEG_ARPI_TREATMENTS = new Set(['n3-abi-pred', 'n3-enza'])
+const HRR_NEG_BONE_RADIO_TREATMENTS = new Set(['n3-ra223-enza'])
+
+export function ruleDrivesRecommendation(prior, rule) {
+  if (rule.from === 'n2-hrr-neg') {
+    return HRR_NEG_ARPI_PRIORS.has(prior)
+      && (HRR_NEG_ARPI_TREATMENTS.has(rule.to) || HRR_NEG_BONE_RADIO_TREATMENTS.has(rule.to))
+  }
+  return !NON_RECOMMENDING_COND_IDS.has(rule.from)
+}
+
+export function ruleMatchesSelection(prior, rule, selectedCondIds) {
+  if (!ruleDrivesRecommendation(prior, rule)) return false
+  if (!selectedCondIds.has(rule.from)) return false
+  if (rule.from === 'n2-hrr-neg' && HRR_NEG_BONE_RADIO_TREATMENTS.has(rule.to)) {
+    return selectedCondIds.has('n2-bone')
+  }
+  return true
+}
+
+export function conditionCanDriveRecommendation(prior, condId) {
+  if (condId === 'n2-hrr-neg') return HRR_NEG_ARPI_PRIORS.has(prior)
+  return !NON_RECOMMENDING_COND_IDS.has(condId)
+}
+
 // Reference content surfaced in the right-hand panel when a Biomarker
 // Assessment node is clicked. Every node inside a testing group opens the
 // same testing-level summary — e.g. "HRR positive" and "HRR negative" both
@@ -528,7 +554,7 @@ export function buildInteractiveNodes(state) {
               helperText: item.helperText,
               selectable: true,
               noTargetHandle: true,
-              noSourceHandle: NON_RECOMMENDING_COND_IDS.has(item.id),
+              noSourceHandle: !conditionCanDriveRecommendation(prior, item.id),
             },
             draggable: false, selectable: false,
           })
@@ -548,7 +574,7 @@ export function buildInteractiveNodes(state) {
             helperText: item.helperText,
             selectable: true,
             noTargetHandle: true,
-            noSourceHandle: NON_RECOMMENDING_COND_IDS.has(item.id),
+            noSourceHandle: !conditionCanDriveRecommendation(prior, item.id),
           },
           draggable: false, selectable: false,
         })

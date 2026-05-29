@@ -11,14 +11,9 @@ import {
   PRIOR_ITEMS,
   SPECIAL_ITEMS,
   TREATMENT_ITEMS,
+  ruleDrivesRecommendation,
+  ruleMatchesSelection,
 } from '../data/interactiveAlgorithm.js'
-
-// Negative / absent biomarker findings don't recommend any treatment.
-const NON_RECOMMENDING_COND_IDS = new Set([
-  'n2-hrr-neg',
-  'n2-psma-neg',
-  'n2-msi-absent',
-])
 
 export const BIO_YES_ID = 'bio-yes'
 export const BIO_NO_ID  = 'bio-no'
@@ -150,8 +145,9 @@ export function describePathway(snapshot) {
   const treatmentIds = []
   if (s.selectedPrior) {
     EDGE_RULES[s.selectedPrior]?.forEach(rule => {
-      if (NON_RECOMMENDING_COND_IDS.has(rule.from)) return
-      if (selected.has(rule.from) && !treatmentIds.includes(rule.to)) treatmentIds.push(rule.to)
+      if (ruleMatchesSelection(s.selectedPrior, rule, selected) && !treatmentIds.includes(rule.to)) {
+        treatmentIds.push(rule.to)
+      }
     })
   }
 
@@ -190,7 +186,7 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     const s = new Set()
     if (selectedPrior.value) {
       EDGE_RULES[selectedPrior.value]?.forEach(r => {
-        if (!NON_RECOMMENDING_COND_IDS.has(r.from)) s.add(r.to)
+        if (ruleDrivesRecommendation(selectedPrior.value, r)) s.add(r.to)
       })
     }
     return s
@@ -207,8 +203,7 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     const s = new Set()
     if (!selectedPrior.value || selectedCondIds.value.size === 0) return s
     EDGE_RULES[selectedPrior.value]?.forEach(r => {
-      if (NON_RECOMMENDING_COND_IDS.has(r.from)) return
-      if (selectedCondIds.value.has(r.from)) s.add(r.to)
+      if (ruleMatchesSelection(selectedPrior.value, r, selectedCondIds.value)) s.add(r.to)
     })
     return s
   })
