@@ -71,6 +71,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import markdownit from 'markdown-it'
 import { sendChatMessage } from '../utils/chatApi.js'
+import { readChatSessionState, writeChatSessionState } from '../utils/chatSessions.js'
 import { useInteractiveAlgorithmStore } from '../stores/interactiveAlgorithm.js'
 
 const emit = defineEmits(['close', 'viz-profile'])
@@ -86,7 +87,6 @@ const providerSessionId = ref(null)
 const interactiveStore = useInteractiveAlgorithmStore()
 const { currentSnapshot } = storeToRefs(interactiveStore)
 
-const CHAT_STORAGE_KEY = 'mcrpc_chat_sessions'
 const md = markdownit()
 
 const initialMessage = {
@@ -276,25 +276,14 @@ function persistActiveSession() {
       messages: messages.value,
     },
   }
-  try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({
-      activeSessionId: sessionId.value,
-      sessions: nextSessions,
-    }))
-  } catch {}
+  writeChatSessionState({
+    activeSessionId: sessionId.value,
+    sessions: nextSessions,
+  })
 }
 
 function readSavedSessions() {
-  try {
-    const raw = localStorage.getItem(CHAT_STORAGE_KEY)
-    const parsed = raw ? JSON.parse(raw) : {}
-    return {
-      activeSessionId: parsed.activeSessionId || null,
-      sessions: parsed.sessions || {},
-    }
-  } catch {
-    return { activeSessionId: null, sessions: {} }
-  }
+  return readChatSessionState()
 }
 
 defineExpose({ focusComposer })

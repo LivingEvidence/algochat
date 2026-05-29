@@ -138,6 +138,11 @@
           v-if="activeTool === 'profile'"
           @profile-loaded="refitFlowchart"
         />
+        <ChatHistoryPanel
+          v-else-if="activeTool === 'history'"
+          ref="chatHistoryPanel"
+          @open-session="openChatSession"
+        />
         <p v-else>{{ activeToolMeta.description }}</p>
       </div>
     </aside>
@@ -265,7 +270,9 @@ import TreatNode          from '../components/nodes/TreatNode.vue'
 import SectionLabelNode   from '../components/nodes/SectionLabelNode.vue'
 import BioQuestionNode    from '../components/nodes/BioQuestionNode.vue'
 import InteractiveProfilePanel from '../components/InteractiveProfilePanel.vue'
+import ChatHistoryPanel from '../components/ChatHistoryPanel.vue'
 import ChatPanel from '../components/ChatPanel.vue'
+import { setActiveChatSession } from '../utils/chatSessions.js'
 
 import { storeToRefs } from 'pinia'
 import {
@@ -284,6 +291,7 @@ import {
 const hoveredNodeId = ref(null)
 const flowInstance  = ref(null)
 const chatPanel     = ref(null)
+const chatHistoryPanel = ref(null)
 const activeTool    = ref(null)
 const showMiniMap   = ref(false)
 
@@ -423,6 +431,10 @@ async function activateTool(tool) {
 
   activeTool.value = tool
   refitFlowchart()
+  if (tool === 'history') {
+    await nextTick()
+    chatHistoryPanel.value?.refresh?.()
+  }
   if (tool === 'chat') {
     await nextTick()
     chatPanel.value?.focusComposer?.()
@@ -436,6 +448,14 @@ function closeToolPanel() {
 
 function applyVizProfile(payload) {
   interactiveStore.applyVizProfile(payload)
+  refitFlowchart()
+}
+
+async function openChatSession(sessionId) {
+  if (!setActiveChatSession(sessionId)) return
+  activeTool.value = 'chat'
+  await nextTick()
+  chatPanel.value?.focusComposer?.()
   refitFlowchart()
 }
 
