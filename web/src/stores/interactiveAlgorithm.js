@@ -279,10 +279,24 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     const entry = savedProfiles.value.find(profile => profile.id === id)
     if (!entry) return
     const snapshot = normalizeSnapshot(entry.snapshot)
-    selectedPrior.value = snapshot.selectedPrior
-    bioChoice.value = snapshot.bioChoice
-    selectedCondIds.value = new Set(snapshot.selectedCondIds)
-    selectedTreatmentId.value = snapshot.selectedTreatmentId
+    applySnapshot(snapshot)
+  }
+
+  function applySnapshot(snapshot) {
+    const normalized = normalizeSnapshot(snapshot)
+    selectedPrior.value = normalized.selectedPrior
+    bioChoice.value = normalized.bioChoice
+    selectedCondIds.value = new Set(normalized.selectedCondIds)
+    selectedTreatmentId.value = normalized.selectedTreatmentId
+  }
+
+  function applyVizProfile(payload = {}) {
+    applySnapshot({
+      selectedPrior: payload.selectedPrior,
+      bioChoice: payload.bioChoice,
+      selectedCondIds: payload.selectedCondIds,
+      selectedTreatmentId: payload.selectedTreatmentId,
+    })
   }
 
   function renameSavedProfile(id, label) {
@@ -320,6 +334,7 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     activeTreatIds,
     knownCondIds,
     matchedTreatIds,
+    currentSnapshot,
     currentPathwayName,
     // actions
     selectPrior,
@@ -330,6 +345,8 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     clearTreatment,
     saveCurrentProfile,
     loadSavedProfile,
+    applySnapshot,
+    applyVizProfile,
     renameSavedProfile,
     deleteSavedProfile,
     clearSavedProfiles,

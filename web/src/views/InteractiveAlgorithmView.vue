@@ -104,7 +104,12 @@
       </button>
     </nav>
 
-    <ChatPanel v-if="activeTool === 'chat'" ref="chatPanel" @close="closeToolPanel" />
+    <ChatPanel
+      v-if="activeTool === 'chat'"
+      ref="chatPanel"
+      @close="closeToolPanel"
+      @viz-profile="applyVizProfile"
+    />
     <aside v-else-if="activeToolMeta" class="tool-panel" :aria-label="activeToolMeta.label">
       <header class="tool-panel-header">
         <h2>{{ activeToolMeta.label }}</h2>
@@ -426,6 +431,11 @@ async function activateTool(tool) {
 
 function closeToolPanel() {
   activeTool.value = null
+  refitFlowchart()
+}
+
+function applyVizProfile(payload) {
+  interactiveStore.applyVizProfile(payload)
   refitFlowchart()
 }
 

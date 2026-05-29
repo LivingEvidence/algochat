@@ -6,7 +6,7 @@
       </div>
       <div class="chat-header-actions">
         <button type="button" class="chat-new" @click="startNewChat">New Chat</button>
-        <span class="chat-status">Ready</span>
+        <span class="chat-status" :class="`is-${statusTone}`">{{ statusLabel }}</span>
         <button type="button" class="chat-close" title="Close chat panel" aria-label="Close chat panel" @click="$emit('close')">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M18 6 6 18" />
@@ -25,6 +25,7 @@
       >
         <span class="message-label">{{ message.role === 'assistant' ? 'Assistant' : 'You' }}</span>
         <p>{{ message.text }}</p>
+        <span v-if="message.actionLabel" class="message-action">{{ message.actionLabel }}</span>
       </div>
 
       <div class="chat-prompts" aria-label="Suggested prompts">
@@ -46,10 +47,11 @@
         ref="composerInput"
         v-model="draft"
         rows="3"
+        :disabled="isLoading"
         placeholder="Ask about options, biomarkers, or the selected profile..."
         @keydown.enter.exact.prevent="sendMessage"
       ></textarea>
-      <button type="submit" :disabled="!draft.trim()" title="Send message" aria-label="Send message">
+      <button type="submit" :disabled="!draft.trim() || isLoading" title="Send message" aria-label="Send message">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="m4 12 15-7-4 14-3-6-8-1Z" />
           <path d="m12 13 7-8" />
@@ -60,30 +62,65 @@
 </template>
 
 <script setup>
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { sendChatMessage } from '../utils/chatApi.js'
+import { useInteractiveAlgorithmStore } from '../stores/interactiveAlgorithm.js'
 
-defineEmits(['close'])
+const emit = defineEmits(['close', 'viz-profile'])
 
 const draft = ref('')
 const composerInput = ref(null)
 const messageList = ref(null)
+const isLoading = ref(false)
+const streamController = ref(null)
+const sessionId = ref(null)
+const providerSessionId = ref(null)
+
+const interactiveStore = useInteractiveAlgorithmStore()
+const { currentSnapshot } = storeToRefs(interactiveStore)
+
+const CHAT_STORAGE_KEY = 'mcrpc_chat_sessions'
+
 const initialMessage = {
-  id: 1,
+  id: 'initial',
   role: 'assistant',
   text: 'Ask a question about the current profile, a biomarker branch, or a treatment option. I can use the flowchart state as context.',
 }
-const messages = ref([
-  initialMessage,
-])
+const messages = ref([])
+
+const statusLabel = computed(() => {
+  if (isLoading.value) return 'Thinking'
+  return 'Ready'
+})
+
+const statusTone = computed(() => isLoading.value ? 'loading' : 'ready')
+
+onMounted(() => {
+  loadActiveSession()
+  if (!messages.value.length) {
+    messages.value = [{ ...initialMessage, id: createId() }]
+    persistActiveSession()
+  }
+})
+
+watch(messages, persistActiveSession, { deep: true })
+watch(providerSessionId, persistActiveSession)
 
 function startNewChat() {
+  streamController.value?.abort()
+  streamController.value = null
+  isLoading.value = false
   draft.value = ''
+  sessionId.value = createId()
+  providerSessionId.value = null
   messages.value = [
     {
       ...initialMessage,
-      id: Date.now(),
+      id: createId(),
     },
   ]
+  persistActiveSession()
   focusComposer()
 }
 
@@ -104,19 +141,146 @@ function usePrompt(prompt) {
 
 async function sendMessage() {
   const text = draft.value.trim()
-  if (!text) return
+  if (!text || isLoading.value) return
 
-  messages.value.push({ id: Date.now(), role: 'user', text })
+  ensureSession()
+  messages.value.push({ id: createId(), role: 'user', text })
   draft.value = ''
 
-  messages.value.push({
-    id: Date.now() + 1,
+  const assistantMessage = {
+    id: createId(),
     role: 'assistant',
-    text: 'Chat orchestration is ready for connection: this message can be replaced by the guideline action response once the model endpoint is wired.',
-  })
+    text: '',
+    actionLabel: '',
+  }
+  messages.value.push(assistantMessage)
+  isLoading.value = true
 
+  scrollToBottom()
+
+  streamController.value = await sendChatMessage({
+    sessionId: sessionId.value,
+    providerSessionId: providerSessionId.value,
+    message: text,
+    context: {
+      currentProfile: currentSnapshot.value,
+    },
+    onEvent: event => handleSseEvent(event, assistantMessage.id),
+    onError: error => handleStreamError(error, assistantMessage.id),
+    onDone: () => handleStreamDone(assistantMessage.id),
+  })
+}
+
+function handleSseEvent({ type, data }, assistantMessageId) {
+  const message = messages.value.find(item => item.id === assistantMessageId)
+  if (type === 'message_start' && data.provider_session_id) {
+    providerSessionId.value = data.provider_session_id
+    return
+  }
+  if (type === 'text_delta' && message) {
+    message.text = data.text || ''
+    scrollToBottom()
+    return
+  }
+  if (type === 'frontend_action' && data.action === 'viz_profile') {
+    emit('viz-profile', data.payload)
+    if (message && !message.text.trim()) {
+      message.text = 'I updated the flowchart for that profile.'
+    }
+    if (message) message.actionLabel = 'Flowchart updated'
+    scrollToBottom()
+    return
+  }
+  if (type === 'message_end') {
+    if (data.provider_session_id) providerSessionId.value = data.provider_session_id
+    if (message && !message.text.trim()) {
+      message.text = 'Done.'
+    }
+    isLoading.value = false
+    streamController.value = null
+    persistActiveSession()
+    return
+  }
+  if (type === 'error') {
+    handleStreamError({ error: data.error }, assistantMessageId)
+  }
+}
+
+function handleStreamError(error, assistantMessageId) {
+  const message = messages.value.find(item => item.id === assistantMessageId)
+  if (message) {
+    message.text = `Error: ${error.error || 'Chat request failed'}`
+  }
+  isLoading.value = false
+  streamController.value = null
+  persistActiveSession()
+}
+
+function handleStreamDone(assistantMessageId) {
+  const message = messages.value.find(item => item.id === assistantMessageId)
+  if (message && !message.text.trim()) {
+    message.text = 'Done.'
+  }
+  isLoading.value = false
+  streamController.value = null
+  persistActiveSession()
+}
+
+async function scrollToBottom() {
   await nextTick()
   messageList.value?.scrollTo({ top: messageList.value.scrollHeight, behavior: 'smooth' })
+}
+
+function ensureSession() {
+  if (!sessionId.value) sessionId.value = createId()
+}
+
+function createId() {
+  return crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function loadActiveSession() {
+  const saved = readSavedSessions()
+  sessionId.value = saved.activeSessionId || createId()
+  const session = saved.sessions?.[sessionId.value]
+  if (session) {
+    providerSessionId.value = session.providerSessionId || null
+    messages.value = Array.isArray(session.messages) ? session.messages : []
+  }
+}
+
+function persistActiveSession() {
+  if (!sessionId.value) return
+  const saved = readSavedSessions()
+  const nextSessions = {
+    ...(saved.sessions || {}),
+    [sessionId.value]: {
+      id: sessionId.value,
+      providerSessionId: providerSessionId.value,
+      createdAt: saved.sessions?.[sessionId.value]?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: messages.value,
+    },
+  }
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({
+      activeSessionId: sessionId.value,
+      sessions: nextSessions,
+    }))
+  } catch {}
+}
+
+function readSavedSessions() {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : {}
+    return {
+      activeSessionId: parsed.activeSessionId || null,
+      sessions: parsed.sessions || {},
+    }
+  } catch {
+    return { activeSessionId: null, sessions: {} }
+  }
 }
 
 defineExpose({ focusComposer })
@@ -168,6 +332,18 @@ defineExpose({ focusComposer })
   font-size: 10px;
   font-weight: 800;
   padding: 3px 8px;
+}
+
+.chat-status.is-loading {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.chat-status.is-ready {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
 }
 
 .chat-new {
@@ -255,12 +431,25 @@ defineExpose({ focusComposer })
   font-size: 13px;
   line-height: 1.55;
   padding: 10px 12px;
+  white-space: pre-wrap;
 }
 
 .chat-message.from-user p {
   border-color: #bfdbfe;
   background: #eff6ff;
   color: #1e3a5f;
+}
+
+.message-action {
+  display: inline-flex;
+  margin: 5px 2px 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
 }
 
 .chat-prompts {
@@ -313,6 +502,11 @@ defineExpose({ focusComposer })
   padding: 10px 11px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.chat-composer textarea:disabled {
+  background: #f8fafc;
+  color: #64748b;
 }
 
 .chat-composer textarea:focus {
