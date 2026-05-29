@@ -24,11 +24,16 @@
         :class="`from-${message.role}`"
       >
         <span class="message-label">{{ message.role === 'assistant' ? 'Assistant' : 'You' }}</span>
-        <p>{{ message.text }}</p>
+        <div
+          v-if="message.role === 'assistant'"
+          class="message-bubble markdown-body"
+          v-html="renderMarkdown(message.text)"
+        ></div>
+        <p v-else class="message-bubble">{{ message.text }}</p>
         <span v-if="message.actionLabel" class="message-action">{{ message.actionLabel }}</span>
       </div>
 
-      <div class="chat-prompts" aria-label="Suggested prompts">
+      <div v-if="showSuggestedPrompts" class="chat-prompts" aria-label="Suggested prompts">
         <button
           v-for="prompt in suggestedPrompts"
           :key="prompt"
@@ -64,6 +69,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import markdownit from 'markdown-it'
 import { sendChatMessage } from '../utils/chatApi.js'
 import { useInteractiveAlgorithmStore } from '../stores/interactiveAlgorithm.js'
 
@@ -81,6 +87,7 @@ const interactiveStore = useInteractiveAlgorithmStore()
 const { currentSnapshot } = storeToRefs(interactiveStore)
 
 const CHAT_STORAGE_KEY = 'mcrpc_chat_sessions'
+const md = markdownit()
 
 const initialMessage = {
   id: 'initial',
@@ -95,6 +102,9 @@ const statusLabel = computed(() => {
 })
 
 const statusTone = computed(() => isLoading.value ? 'loading' : 'ready')
+const showSuggestedPrompts = computed(() =>
+  !messages.value.some(message => message.role === 'user')
+)
 
 onMounted(() => {
   loadActiveSession()
@@ -137,6 +147,10 @@ function focusComposer() {
 function usePrompt(prompt) {
   draft.value = prompt
   focusComposer()
+}
+
+function renderMarkdown(text) {
+  return md.render(text || '')
 }
 
 async function sendMessage() {
@@ -422,7 +436,7 @@ defineExpose({ focusComposer })
   text-transform: uppercase;
 }
 
-.chat-message p {
+.message-bubble {
   margin: 0;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -431,12 +445,93 @@ defineExpose({ focusComposer })
   font-size: 13px;
   line-height: 1.55;
   padding: 10px 12px;
+}
+
+.chat-message.from-user .message-bubble {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a5f;
   white-space: pre-wrap;
 }
 
-.chat-message.from-user p {
-  border-color: #bfdbfe;
-  background: #eff6ff;
+.markdown-body {
+  overflow-wrap: anywhere;
+}
+
+.markdown-body :deep(:first-child) {
+  margin-top: 0;
+}
+
+.markdown-body :deep(:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-body :deep(p),
+.markdown-body :deep(ul),
+.markdown-body :deep(ol),
+.markdown-body :deep(table),
+.markdown-body :deep(blockquote),
+.markdown-body :deep(pre) {
+  margin: 0 0 10px;
+}
+
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+  padding-left: 18px;
+}
+
+.markdown-body :deep(li + li) {
+  margin-top: 4px;
+}
+
+.markdown-body :deep(strong) {
+  color: #1e3a5f;
+  font-weight: 800;
+}
+
+.markdown-body :deep(code) {
+  border-radius: 5px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 12px;
+  padding: 1px 4px;
+}
+
+.markdown-body :deep(pre) {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #f8fafc;
+  padding: 9px 10px;
+}
+
+.markdown-body :deep(pre code) {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-body :deep(a) {
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.markdown-body :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  border: 1px solid #e2e8f0;
+  padding: 6px 7px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-body :deep(th) {
+  background: #f8fafc;
   color: #1e3a5f;
 }
 
