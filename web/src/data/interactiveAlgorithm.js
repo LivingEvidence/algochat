@@ -100,14 +100,21 @@ export const NON_RECOMMENDING_COND_IDS = new Set([
 
 function subGroupHeight(sg) {
   const n = sg.items.length
-  return HEADER_H_SUB + V_PAD_SUB + n * ITEM_H + (n - 1) * ITEM_GAP + V_PAD_SUB
+  return HEADER_H_SUB + V_PAD_SUB
+    + sg.items.reduce((sum, item) => sum + condItemHeight(item), 0)
+    + (n - 1) * ITEM_GAP
+    + V_PAD_SUB
+}
+
+function condItemHeight(item) {
+  return item.helperText ? 58 : ITEM_H
 }
 
 function midGroupHeight(group) {
   let h = HEADER_H_MID + V_PAD_MID
   const blocks = []
   if (group.subgroup) blocks.push(subGroupHeight(group.subgroup))
-  ;(group.items || []).forEach(() => blocks.push(ITEM_H))
+  ;(group.items || []).forEach(item => blocks.push(condItemHeight(item)))
   h += blocks.reduce((a, b) => a + b, 0) + (blocks.length - 1) * ITEM_GAP
   return h + V_PAD_MID
 }
@@ -218,7 +225,11 @@ export function buildInteractiveNodes(state) {
   const arpiPriors = new Set(['n1-adt-arpi', 'n1-adt-arpi-doc'])
   const hrrItems = arpiPriors.has(prior)
     ? [
-        { id: 'n2-hrr-pos', label: 'HRR positive' },
+        {
+          id: 'n2-hrr-pos',
+          label: 'HRR positive',
+          helperText: 'Including BRCA1 or BRCA2 positive and Non-BRCA HRR positive',
+        },
         { id: 'n2-hrr-neg', label: 'HRR negative' },
       ]
     : [
@@ -294,13 +305,18 @@ export function buildInteractiveNodes(state) {
           draggable: false, selectable: false, focusable: false,
         })
         sg.items.forEach((item, i) => {
+          const itemY = HEADER_H_SUB + V_PAD_SUB
+            + sg.items.slice(0, i).reduce((sum, previous) => sum + condItemHeight(previous) + ITEM_GAP, 0)
+          const itemH = condItemHeight(item)
           nodes.push({
             id: item.id, type: 'condNode',
             parentNode: sgId,
-            position: { x: H_PAD_SUB, y: HEADER_H_SUB + V_PAD_SUB + i * (ITEM_H + ITEM_GAP) },
-            style: { width: `${sgItemW}px` },
+            position: { x: H_PAD_SUB, y: itemY },
+            style: { width: `${sgItemW}px`, height: `${itemH}px` },
             data: {
               label: item.label,
+              helperText: item.helperText,
+              selectable: true,
               noTargetHandle: true,
               noSourceHandle: NON_RECOMMENDING_COND_IDS.has(item.id),
             },
@@ -311,19 +327,22 @@ export function buildInteractiveNodes(state) {
       }
 
       ;(group.items || []).forEach(item => {
+        const itemH = condItemHeight(item)
         nodes.push({
           id: item.id, type: 'condNode',
           parentNode: midId,
           position: { x: H_PAD_MID, y: innerY },
-          style: { width: `${MID_ITEM_W}px` },
+          style: { width: `${MID_ITEM_W}px`, height: `${itemH}px` },
           data: {
             label: item.label,
+            helperText: item.helperText,
+            selectable: true,
             noTargetHandle: true,
             noSourceHandle: NON_RECOMMENDING_COND_IDS.has(item.id),
           },
           draggable: false, selectable: false,
         })
-        innerY += ITEM_H + ITEM_GAP
+        innerY += itemH + ITEM_GAP
       })
 
       midY += midH + GROUP_GAP

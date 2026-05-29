@@ -6,16 +6,21 @@
       { 'hover-highlight': data.hoverHighlight },
       { compact: data.compact },
     ]"
+    @click.stop="emit('select')"
   >
     <Handle v-if="data.accent !== 'special' && !data.noTargetHandle" type="target" :position="Position.Left" />
     <Handle v-if="!data.noSourceHandle" type="source" :position="Position.Right" />
-    <span class="label">{{ data.label }}</span>
+    <span class="copy">
+      <span class="label">{{ data.label }}</span>
+      <span v-if="data.helperText" class="helper">{{ data.helperText }}</span>
+    </span>
   </div>
 </template>
 
 <script setup>
 import { Handle, Position } from '@vue-flow/core'
 defineProps(['data'])
+const emit = defineEmits(['select'])
 </script>
 
 <style scoped>
@@ -35,6 +40,25 @@ defineProps(['data'])
   font-weight: 500;
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, opacity 0.2s;
   position: relative;
+}
+.copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.label,
+.helper {
+  overflow-wrap: anywhere;
+}
+.helper {
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #52796f;
+}
+.state-matched .helper {
+  color: #047857;
 }
 .cond-node.compact {
   min-height: 34px;

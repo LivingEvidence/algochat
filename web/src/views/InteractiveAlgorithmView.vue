@@ -197,7 +197,7 @@
           <PriorNode :data="nodeProps.data" @select="selectPrior(nodeProps.id)" />
         </template>
         <template #node-condNode="nodeProps">
-          <CondNode :data="nodeProps.data" />
+          <CondNode :data="nodeProps.data" @select="selectCondNode(nodeProps.id, nodeProps.data)" />
         </template>
         <template #node-treatNode="nodeProps">
           <TreatNode :data="nodeProps.data" />
@@ -371,6 +371,11 @@ function toggleCondById(id) {
   refitFlowchart()
 }
 
+function selectCondNode(id, data = {}) {
+  if (!selectedPrior.value || bioChoice.value === null) return
+  if (knownCondIds.value.has(id) || data.selectable) toggleCondById(id)
+}
+
 function onNodeClick({ node }) {
   if (node.type === 'priorNode') {
     selectPrior(node.id)
@@ -378,10 +383,7 @@ function onNodeClick({ node }) {
   }
 
   if (node.type === 'condNode' && selectedPrior.value && bioChoice.value !== null) {
-    // Only toggle real condition / special-situation nodes (tied to EDGE_RULES)
-    if (knownCondIds.value.has(node.id)) {
-      toggleCondById(node.id)
-    }
+    selectCondNode(node.id, node.data)
   }
   if (node.type === 'treatNode') {
     interactiveStore.selectTreatment(node.id)
@@ -470,7 +472,7 @@ const computedNodes = computed(() =>
       return { ...node, data: { ...node.data, showSpecialLink } }
     }
     if (node.type === 'condNode') {
-      const inPath = activeCondIds.value.has(node.id)
+      const inPath = activeCondIds.value.has(node.id) || node.data.selectable
       return { ...node, data: {
         ...node.data,
         state:          !inPath ? 'default'
