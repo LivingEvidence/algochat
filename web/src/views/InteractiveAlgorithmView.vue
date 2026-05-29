@@ -296,7 +296,8 @@ import {
   SPECIAL_INFO_BY_ID,
   TREATMENT_INFO,
   pathwayNoteFor,
-  NON_RECOMMENDING_COND_IDS,
+  ruleDrivesRecommendation,
+  ruleMatchesSelection,
 } from '../data/interactiveAlgorithm.js'
 import {
   useInteractiveAlgorithmStore,
@@ -380,8 +381,7 @@ const matchedPathwayNotes = computed(() => {
   const notes = []
   ;(EDGE_RULES[prior] || []).forEach(rule => {
     if (rule.to !== tid) return
-    if (!selectedCondIds.value.has(rule.from)) return
-    if (NON_RECOMMENDING_COND_IDS.has(rule.from)) return
+    if (!ruleMatchesSelection(prior, rule, selectedCondIds.value)) return
     if (seen.has(rule.from)) return
     const note = pathwayNoteFor(prior, rule.from)
     if (!note) return
@@ -580,7 +580,7 @@ const hoverLinkedIds = computed(() => {
   if (!hid || !selectedPrior.value) return s
   const rules = EDGE_RULES[selectedPrior.value] || []
   rules.forEach(r => {
-    if (NON_RECOMMENDING_COND_IDS.has(r.from)) return
+    if (!ruleDrivesRecommendation(selectedPrior.value, r)) return
     if (r.from === hid && activeTreatIds.value.has(r.to))   s.add(r.to)
     if (r.to   === hid && activeCondIds.value.has(r.from))  s.add(r.from)
   })
@@ -670,13 +670,14 @@ const computedEdges = computed(() => {
   const visibleRules = rules.filter(r =>
     presentIds.has(r.from)
     && presentIds.has(r.to)
-    && !NON_RECOMMENDING_COND_IDS.has(r.from),
+    && ruleDrivesRecommendation(selectedPrior.value, r),
   )
 
   // ── Cond / Special → Treatment edges (only after treatments visible) ──
   const n2n3 = treatmentsVisible ? visibleRules.map((rule, i) => {
     const id = `e23-${selectedPrior.value}-${i}`
-    const isMatched = matchedConds.has(rule.from) && matchedTreat.has(rule.to)
+    const isMatched = ruleMatchesSelection(selectedPrior.value, rule, matchedConds)
+      && matchedTreat.has(rule.to)
     return isMatched
       ? edgeMatched(id, rule.from, rule.to)
       : edgePotential(id, rule.from, rule.to)
