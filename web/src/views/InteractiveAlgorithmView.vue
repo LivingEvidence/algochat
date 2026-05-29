@@ -231,32 +231,32 @@
       </VueFlow>
     </section>
 
-    <aside v-if="selectedTreatment" class="evidence-panel" aria-label="Treatment evidence">
+    <aside v-if="panelContent" class="evidence-panel" :aria-label="panelContent.ariaLabel">
       <div class="evidence-header">
         <div>
-          <h2>{{ selectedTreatment.label }}</h2>
+          <h2>{{ panelContent.title }}</h2>
         </div>
-        <button class="evidence-close" title="Close evidence panel" @click="closeEvidencePanel">
+        <button class="evidence-close" title="Close panel" @click="closeEvidencePanel">
           ×
         </button>
       </div>
 
       <div class="evidence-body">
         <div class="evidence-summary">
-          <span class="evidence-dot" :class="`cat-${selectedTreatment.cat}`"></span>
-          <span>{{ treatmentCategoryLabel }}</span>
+          <span class="evidence-dot" :class="panelContent.dotClass"></span>
+          <span>{{ panelContent.summary }}</span>
         </div>
-        <p>
-          Evidence content for this treatment option will be shown here after the
-          supporting data model is finalized.
-        </p>
+        <p v-for="(para, i) in panelContent.paragraphs" :key="i">{{ para }}</p>
+        <ul v-if="panelContent.points" class="evidence-points">
+          <li v-for="(point, i) in panelContent.points" :key="i">{{ point }}</li>
+        </ul>
       </div>
     </aside>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
@@ -281,6 +281,10 @@ import {
   TREATMENT_ITEMS,
   BIOMARKER_MUTEX_BY_ID,
   BIOMARKER_MUTEX_GROUPS,
+  BIOMARKER_INFO,
+  BIOMARKER_INFO_BY_ID,
+  SPECIAL_INFO,
+  SPECIAL_INFO_BY_ID,
   NON_RECOMMENDING_COND_IDS,
 } from '../data/interactiveAlgorithm.js'
 import {
@@ -294,6 +298,10 @@ const chatPanel     = ref(null)
 const chatHistoryPanel = ref(null)
 const activeTool    = ref(null)
 const showMiniMap   = ref(false)
+// Biomarker / special-situation node currently inspected in the right panel:
+// { kind: 'biomarker' | 'special', key } | null. Treatment inspection lives
+// in the store; the two are mutually exclusive — one right panel at a time.
+const selectedNodeInfo = ref(null)
 
 // ── Workflow state from Pinia store (isolated per-view) ──────────
 const interactiveStore = useInteractiveAlgorithmStore()
@@ -337,6 +345,51 @@ const CATEGORY_LABELS = {
 const treatmentCategoryLabel = computed(() =>
   CATEGORY_LABELS[selectedTreatment.value?.cat] || 'Treatment option'
 )
+
+// Resolve the inspected node (biomarker / special situation) to its content.
+const nodeInfoContent = computed(() => {
+  const sel = selectedNodeInfo.value
+  if (!sel) return null
+  if (sel.kind === 'biomarker') {
+    const info = BIOMARKER_INFO[sel.key]
+    return info && { ...info, dotClass: 'cat-biomarker', ariaLabel: 'Biomarker testing information' }
+  }
+  const info = SPECIAL_INFO[sel.key]
+  return info && { ...info, dotClass: 'cat-special', ariaLabel: 'Special situation information' }
+})
+
+// ── Right panel content (treatment evidence OR node testing/situation info) ──
+const panelContent = computed(() => {
+  if (selectedTreatment.value) {
+    return {
+      ariaLabel: 'Treatment evidence',
+      title: selectedTreatment.value.label,
+      summary: treatmentCategoryLabel.value,
+      dotClass: `cat-${selectedTreatment.value.cat}`,
+      paragraphs: [
+        'Evidence content for this treatment option will be shown here after the supporting data model is finalized.',
+      ],
+      points: null,
+    }
+  }
+  const info = nodeInfoContent.value
+  if (info) {
+    return {
+      ariaLabel: info.ariaLabel,
+      title: info.title,
+      summary: info.summary,
+      dotClass: info.dotClass,
+      paragraphs: info.paragraphs,
+      points: info.points,
+    }
+  }
+  return null
+})
+
+// Selecting a treatment, changing prior, or changing the biomarker question
+// all supersede an open node-info panel.
+watch(selectedTreatmentId, id => { if (id) selectedNodeInfo.value = null })
+watch([selectedPrior, bioChoice], () => { selectedNodeInfo.value = null })
 
 const TOOL_META = {
   history: {
@@ -387,6 +440,17 @@ function toggleCondById(id) {
 function selectCondNode(id, data = {}) {
   if (!selectedPrior.value || bioChoice.value === null) return
   if (knownCondIds.value.has(id) || data.selectable) toggleCondById(id)
+  // Biomarker assessment and special-situation nodes also open the info
+  // panel. (Variants of a biomarker test surface the same content.)
+  const bioKey = BIOMARKER_INFO_BY_ID[id]
+  const specialKey = SPECIAL_INFO_BY_ID[id]
+  if (bioKey) {
+    interactiveStore.clearTreatment()
+    selectedNodeInfo.value = { kind: 'biomarker', key: bioKey }
+  } else if (specialKey) {
+    interactiveStore.clearTreatment()
+    selectedNodeInfo.value = { kind: 'special', key: specialKey }
+  }
 }
 
 function onNodeClick({ node }) {
@@ -405,6 +469,7 @@ function onNodeClick({ node }) {
       && selectedCondIds.value.has('n2-doc-yes')
       && !matchedTreatIds.value.has(node.id)
     ) return
+    selectedNodeInfo.value = null
     interactiveStore.selectTreatment(node.id)
     refitFlowchart()
   }
@@ -425,6 +490,7 @@ function onPaneReady(instance) {
 
 function closeEvidencePanel() {
   interactiveStore.clearTreatment()
+  selectedNodeInfo.value = null
   refitFlowchart()
 }
 
@@ -1001,12 +1067,25 @@ const computedEdges = computed(() => {
 .evidence-dot.cat-targeted { background: #0891b2; }
 .evidence-dot.cat-immuno { background: #db2777; }
 .evidence-dot.cat-local { background: #64748b; }
+.evidence-dot.cat-biomarker { background: #52796f; }
+.evidence-dot.cat-special { background: #8b5cf6; }
 
 .evidence-body p {
   margin: 0;
   color: #64748b;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.evidence-points {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 @media (max-width: 900px) {

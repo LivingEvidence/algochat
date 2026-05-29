@@ -122,6 +122,127 @@ export const NON_RECOMMENDING_COND_IDS = new Set([
   'n2-msi-absent',
 ])
 
+// Reference content surfaced in the right-hand panel when a Biomarker
+// Assessment node is clicked. Every node inside a testing group opens the
+// same testing-level summary — e.g. "HRR positive" and "HRR negative" both
+// open the HRR Testing panel; likewise for PSMA and MSI-H / dMMR.
+export const BIOMARKER_INFO = {
+  hrr: {
+    title: 'HRR Testing',
+    summary: 'Homologous recombination repair gene testing',
+    paragraphs: [
+      'Germline and somatic testing for alterations in homologous recombination repair (HRR) genes, including BRCA1 and BRCA2. A positive result identifies candidates for PARP inhibitor–based therapy.',
+    ],
+    points: [
+      'BRCA1/2 alterations carry the strongest PARP inhibitor benefit.',
+      'Non-BRCA HRR alterations may also confer sensitivity.',
+      'HRR-negative disease is directed toward AR pathway inhibitors, chemotherapy, or radiopharmaceuticals.',
+    ],
+  },
+  psma: {
+    title: 'PSMA Testing',
+    summary: 'Prostate-specific membrane antigen PET imaging',
+    paragraphs: [
+      'PSMA PET imaging establishes the PSMA avidity of metastatic lesions. Sufficient uptake identifies candidates for ¹⁷⁷Lu-PSMA-617 radioligand therapy.',
+    ],
+    points: [
+      'PSMA-positive disease supports ¹⁷⁷Lu-PSMA-617 radioligand therapy.',
+      'PSMA-negative disease does not support PSMA-targeted radioligand therapy.',
+    ],
+  },
+  msi: {
+    title: 'MSI-H / dMMR Testing',
+    summary: 'Microsatellite instability / mismatch repair status',
+    paragraphs: [
+      'Testing for microsatellite instability–high (MSI-H) or mismatch repair deficiency (dMMR). A positive result identifies candidates for immune checkpoint inhibition.',
+    ],
+    points: [
+      'MSI-H / dMMR present supports pembrolizumab.',
+      'MSI-H / dMMR absent does not support checkpoint inhibitor therapy on this basis.',
+    ],
+  },
+}
+
+// Reverse map: every biomarker condition node id → its testing-group key,
+// so a click on any node opens the shared testing-level panel.
+export const BIOMARKER_INFO_BY_ID = {}
+Object.entries(BIOMARKER_MUTEX_GROUPS).forEach(([key, ids]) => {
+  ids.forEach(id => { BIOMARKER_INFO_BY_ID[id] = key })
+})
+
+// Reference content surfaced in the right-hand panel when a Special
+// Situation node is clicked. Standalone scenarios each have their own entry;
+// the chemotherapy-eligibility options share one panel, as do the prior
+// Docetaxel-exposure answers.
+export const SPECIAL_INFO = {
+  oligo: {
+    title: 'Oligometastatic Disease',
+    summary: 'Limited-volume metastatic disease',
+    paragraphs: [
+      'A small number of metastatic lesions where metastasis-directed therapy may be considered alongside systemic treatment.',
+    ],
+    points: [
+      'Radiation or surgery may target individual lesions.',
+      'Typically combined with continued systemic therapy.',
+    ],
+  },
+  indolent: {
+    title: 'Indolent Disease',
+    summary: 'Slowly progressing, low-symptom disease',
+    paragraphs: [
+      'Asymptomatic or minimally symptomatic disease with a slow pace of progression, where less intensive options may be appropriate.',
+    ],
+    points: [
+      'Sipuleucel-T may be considered for asymptomatic or minimally symptomatic disease.',
+    ],
+  },
+  bone: {
+    title: 'Bone-Predominant, Symptomatic Disease',
+    summary: 'Symptomatic bone metastases without visceral disease',
+    paragraphs: [
+      'Symptomatic disease predominantly involving bone, without visceral metastases, where bone-targeted radiopharmaceuticals are an option.',
+    ],
+    points: [
+      'Radium-223 is indicated for symptomatic bone metastases.',
+      'Not appropriate when visceral metastases are present.',
+    ],
+  },
+  chemo: {
+    title: 'Chemotherapy Eligibility',
+    summary: 'Fitness for taxane chemotherapy',
+    paragraphs: [
+      'Assessment of whether the patient can tolerate taxane chemotherapy. Eligibility guides the choice between docetaxel, cabazitaxel, or non-chemotherapy options.',
+    ],
+    points: [
+      'Docetaxel-eligible patients may receive docetaxel.',
+      'Docetaxel-ineligible patients (e.g., neuropathy) may be directed to cabazitaxel.',
+    ],
+  },
+  docetaxelTaken: {
+    title: 'Prior Docetaxel Exposure',
+    summary: 'Whether the patient has already received docetaxel',
+    paragraphs: [
+      'Prior docetaxel exposure narrows the subsequent taxane choice — patients who have already received docetaxel are typically directed to cabazitaxel.',
+    ],
+    points: [
+      'No prior docetaxel: docetaxel remains an option.',
+      'Prior docetaxel: cabazitaxel is the preferred taxane.',
+    ],
+  },
+}
+
+// Reverse map: every special-situation node id → its info key.
+export const SPECIAL_INFO_BY_ID = {
+  'n2-oligo': 'oligo',
+  'n2-indolent': 'indolent',
+  'n2-bone': 'bone',
+  'n2-doc-yes': 'chemo',
+  'n2-doc-no': 'chemo',
+  'n2-caba-yes': 'chemo',
+  [DOCETAXEL_TAKEN_YES_ID]: 'docetaxelTaken',
+  [DOCETAXEL_TAKEN_NO_ID]: 'docetaxelTaken',
+}
+
 // ── Geometry helpers ─────────────────────────────────────────────
 
 function subGroupHeight(sg) {
