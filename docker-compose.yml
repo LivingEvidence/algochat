@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api.dockerfile
+    env_file:
+      - ./api/.env
+    environment:
+      API_PORT: "8392"
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,https://livingevidence.github.io"
+    ports:
+      - "8392:8392"
+    restart: unless-stopped
+
+  web:
+    profiles:
+      - web
+    build:
+      context: .
+      dockerfile: web.dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8392}
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped

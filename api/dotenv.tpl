@@ -16,7 +16,7 @@ ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-haiku-4-5
 ANTHROPIC_DEFAULT_OPUS_MODEL=claude-haiku-4-5
 
 # Comma-separated frontend origins allowed by CORS.
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,https://livingevidence.github.io
 
 # Local backend port used by `uv run python run.py`.
 API_PORT=8392

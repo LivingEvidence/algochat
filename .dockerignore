@@ -1,0 +1,15 @@
+.git
+.github
+.DS_Store
+
+api/.env
+api/.venv
+api/__pycache__
+api/**/__pycache__
+api/**/*.pyc
+
+web/.env
+web/node_modules
+web/dist
+
+**/.DS_Store

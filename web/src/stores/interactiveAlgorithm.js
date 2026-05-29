@@ -6,11 +6,12 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import {
   BIOMARKER_GROUPS,
+  DOCETAXEL_TAKEN_IDS,
   EDGE_RULES,
   PRIOR_ITEMS,
   SPECIAL_ITEMS,
   TREATMENT_ITEMS,
-} from '../data/triColumn.js'
+} from '../data/interactiveAlgorithm.js'
 
 // Negative / absent biomarker findings don't recommend any treatment.
 const NON_RECOMMENDING_COND_IDS = new Set([
@@ -37,6 +38,8 @@ const COND_LABELS = {
   'n2-psma-neg': 'PSMA-',
   'n2-msi-present': 'MSI-H / dMMR present',
   'n2-msi-absent': 'MSI-H / dMMR absent',
+  'n2-doc-taken-yes': 'Taken Docetaxel: Yes',
+  'n2-doc-taken-no': 'Taken Docetaxel: No',
 }
 
 SPECIAL_ITEMS.forEach(item => {
@@ -241,8 +244,12 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
 
   function toggleCondById(id) {
     const next = new Set(selectedCondIds.value)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
+    if (next.has(id)) {
+      next.delete(id)
+      if (id === 'n2-doc-yes') DOCETAXEL_TAKEN_IDS.forEach(answerId => next.delete(answerId))
+    } else {
+      next.add(id)
+    }
     selectedCondIds.value = next
   }
 
@@ -252,6 +259,9 @@ export const useInteractiveAlgorithmStore = defineStore('interactiveAlgorithm', 
     const alreadyOn = selectedCondIds.value.has(id)
     const next = new Set(selectedCondIds.value)
     siblingIds.forEach(s => next.delete(s))
+    if (siblingIds.includes('n2-doc-yes')) {
+      DOCETAXEL_TAKEN_IDS.forEach(answerId => next.delete(answerId))
+    }
     if (!alreadyOn) next.add(id)
     selectedCondIds.value = next
   }

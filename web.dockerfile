@@ -1,0 +1,20 @@
+FROM oven/bun:1 AS build
+
+WORKDIR /app
+
+ARG VITE_API_BASE_URL=http://localhost:8392
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+COPY web/package.json web/bun.lock ./
+RUN bun install --frozen-lockfile
+
+COPY web/ ./
+RUN bun run build
+
+FROM nginx:1.27-alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

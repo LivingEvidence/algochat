@@ -5,6 +5,7 @@
       data.accent ? `accent-${data.accent}` : null,
       { 'hover-highlight': data.hoverHighlight },
       { compact: data.compact },
+      { tight: data.tight },
     ]"
     @click.stop="emit('select')"
   >
@@ -64,6 +65,11 @@ const emit = defineEmits(['select'])
   min-height: 34px;
   padding: 5px 10px;
   line-height: 1.2;
+}
+.cond-node.compact.tight {
+  min-height: 0;
+  padding: 2px 8px;
+  line-height: 1;
 }
 
 /* ── default: no prior selected ── */

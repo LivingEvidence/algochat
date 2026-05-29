@@ -17,11 +17,30 @@ import {
   BIOMARKER_GROUPS,
   SPECIAL_ITEMS,
   TREATMENT_ITEMS,
-  EDGE_RULES,
+  EDGE_RULES as BASE_EDGE_RULES,
   specialItemsForPrior,
 } from './triColumn.js'
 
-export { EDGE_RULES, TREATMENT_ITEMS, PRIOR_ITEMS, BIOMARKER_GROUPS, SPECIAL_ITEMS }
+export { TREATMENT_ITEMS, PRIOR_ITEMS, BIOMARKER_GROUPS, SPECIAL_ITEMS }
+
+export const DOCETAXEL_QUESTION_ID = 'docetaxel-question'
+export const DOCETAXEL_TAKEN_YES_ID = 'n2-doc-taken-yes'
+export const DOCETAXEL_TAKEN_NO_ID = 'n2-doc-taken-no'
+export const DOCETAXEL_TAKEN_IDS = [DOCETAXEL_TAKEN_YES_ID, DOCETAXEL_TAKEN_NO_ID]
+
+export const EDGE_RULES = Object.fromEntries(
+  Object.entries(BASE_EDGE_RULES).map(([prior, rules]) => [
+    prior,
+    rules.flatMap(rule => {
+      if (rule.from !== 'n2-doc-yes' || rule.to !== 'n3-docetaxel') return [rule]
+      return [
+        { from: 'n2-doc-yes', to: DOCETAXEL_QUESTION_ID },
+        { from: DOCETAXEL_TAKEN_YES_ID, to: 'n3-cabazi' },
+        { from: DOCETAXEL_TAKEN_NO_ID, to: 'n3-docetaxel' },
+      ]
+    }),
+  ]),
+)
 
 // Yes / No nodes used for the Biomarker question
 export const BIO_YES_ID = 'bio-yes'
@@ -46,17 +65,22 @@ const PROMPT_H      = 44
 
 const G1_W          = 200
 const COL2_W        = 280   // Question + Biomarker Assessment (stacked)
+const BIO_QUESTION_W = 196
 const SPECIAL_W     = 280
-const G3_W          = 240
+const G3_W          = 260
 
 const G1_X          = 40
 const COL2_X        = 290   // Question + Biomarker column
-const SPECIAL_X     = 600   // Special Situations column
-const G3_X          = 920   // Treatment Options column
+const SPECIAL_X     = 580   // Special Situations column
+const G3_X          = 880   // Treatment Options column
 const TOP_Y         = 30
 const SPECIAL_Y     = -90
 const COL_GAP_VERT  = 24
-const SPECIAL_DESC_H = 38
+const SPECIAL_DESC_H = 28
+const DOC_Q_W = 112
+const DOC_Q_H = 92
+const DOC_Q_X = SPECIAL_X + SPECIAL_W + 10
+const DOC_Q_TREATMENT_SHIFT = 140
 
 // All biomarker condition ids (flattened) — used to detect when the user
 // has made a selection inside the biomarker assessment.
@@ -79,6 +103,7 @@ export const BIOMARKER_MUTEX_GROUPS = {
 // also single-select within their group.
 const SPECIAL_MUTEX_GROUPS = {
   'sg-doc-elig': ['n2-doc-yes', 'n2-doc-no', 'n2-caba-yes'],
+  'docetaxel-taken': DOCETAXEL_TAKEN_IDS,
 }
 
 export const BIOMARKER_MUTEX_BY_ID = {}
@@ -153,7 +178,7 @@ function specialItemHeight(item) {
 }
 
 function specialGroupHeight(items) {
-  let h = HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID
+  let h = HEADER_H_MID + SPECIAL_DESC_H
   items.forEach((it, i) => {
     if (it.items) h += DOC_ELIG_GROUP_TOP_GAP
     h += specialItemHeight(it)
@@ -193,11 +218,11 @@ export function buildInteractiveNodes(state) {
 
   // ─── Biomarker Question — minimal standalone card ───────────────
   // Always visible once a prior treatment has been chosen.
-  const questionCardH = 96
+  const questionCardH = 132
   nodes.push({
     id: 'bio-question', type: 'bioQuestionNode',
-    position: { x: COL2_X, y: TOP_Y },
-    style: { width: `${COL2_W}px` },
+    position: { x: COL2_X + (COL2_W - BIO_QUESTION_W) / 2, y: TOP_Y },
+    style: { width: `${BIO_QUESTION_W}px` },
     data: {
       label: 'Has the patient taken any biomarker assessment?',
       choice: bioChoice,
@@ -357,6 +382,7 @@ export function buildInteractiveNodes(state) {
   const specialGroupH = specialGroupHeight(visibleSpecialItems)
   const SPECIAL_ITEM_W = SPECIAL_W - 2 * H_PAD_MID
   const SPECIAL_COLOR  = '#8b5cf6'
+  let docEligibleY = null
 
   if (showSpecial) {
     nodes.push({
@@ -373,7 +399,7 @@ export function buildInteractiveNodes(state) {
       },
       draggable: false, selectable: false, focusable: false,
     })
-    let specialY = HEADER_H_MID + SPECIAL_DESC_H + V_PAD_MID
+    let specialY = HEADER_H_MID + SPECIAL_DESC_H
     visibleSpecialItems.forEach(item => {
       if (item.items) {
         // ── Sub-grouped special situation (Docetaxel eligibility) ──
@@ -391,6 +417,9 @@ export function buildInteractiveNodes(state) {
         let innerY = HEADER_H_SUB + V_PAD_SUB + DOC_ELIG_TOP_GAP
         item.items.forEach(sub => {
           const subH = sub.id === 'n2-doc-no' ? DOC_INELIG_H : DOC_ELIG_H
+          if (sub.id === 'n2-doc-yes') {
+            docEligibleY = SPECIAL_Y + specialY + innerY
+          }
           nodes.push({
             id: sub.id, type: 'condNode',
             parentNode: `g-${item.id}`,
@@ -420,6 +449,46 @@ export function buildInteractiveNodes(state) {
     })
   }
 
+  const hasDocetaxelQuestion = condIds?.has('n2-doc-yes')
+
+  if (hasDocetaxelQuestion) {
+    const questionY = docEligibleY ?? SPECIAL_Y
+    nodes.push({
+      id: DOCETAXEL_QUESTION_ID,
+      type: 'customGroup',
+      position: { x: DOC_Q_X, y: questionY },
+      style: { width: `${DOC_Q_W}px`, height: `${DOC_Q_H}px` },
+      data: {
+        label: 'Has the patient taken Docetaxel?',
+        color: '#2563eb',
+        tier: 'mid',
+        compactQuestion: true,
+        acceptsTarget: true,
+        targetPosition: 'left',
+      },
+      draggable: false,
+      selectable: false,
+      focusable: false,
+      zIndex: 20,
+    })
+    ;[
+      { id: DOCETAXEL_TAKEN_YES_ID, label: 'Yes' },
+      { id: DOCETAXEL_TAKEN_NO_ID, label: 'No' },
+    ].forEach((item, i) => {
+      nodes.push({
+        id: item.id,
+        type: 'condNode',
+        parentNode: DOCETAXEL_QUESTION_ID,
+        position: { x: 6, y: 38 + i * 25 },
+        style: { width: `${DOC_Q_W - 12}px`, height: '22px' },
+        data: { label: item.label, selectable: true, accent: 'special', compact: true, tight: true },
+        draggable: false,
+        selectable: false,
+        zIndex: 21,
+      })
+    })
+  }
+
   // ─── Treatment Options ─────────────────────────────────────────
   // Show only after the user has selected at least one biomarker / special
   // situation node so the workflow stays guided.
@@ -436,13 +505,15 @@ export function buildInteractiveNodes(state) {
   const leftMaxY = Math.max(
     bioBottomY,
     showSpecial ? SPECIAL_Y + specialGroupH : TOP_Y,
+    hasDocetaxelQuestion ? (docEligibleY ?? SPECIAL_Y) + DOC_Q_H : TOP_Y,
   )
   const treatmentsAreaH = leftMaxY - TOP_Y
   const g3Y = TOP_Y + Math.max(0, (treatmentsAreaH - g3H) / 2)
+  const g3X = hasDocetaxelQuestion ? G3_X + DOC_Q_TREATMENT_SHIFT : G3_X
 
   nodes.push({
     id: 'g3', type: 'customGroup',
-    position: { x: G3_X, y: g3Y },
+    position: { x: g3X, y: g3Y },
     style: { width: `${G3_W}px`, height: `${g3H}px` },
     data: { label: 'Treatment Options', num: '', color: '#1e3a5f' },
     draggable: false, selectable: false, focusable: false,

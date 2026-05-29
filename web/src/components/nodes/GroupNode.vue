@@ -1,5 +1,9 @@
 <template>
-  <div class="grp-container" :class="`tier-${tier}`" :style="containerStyle">
+  <div
+    class="grp-container"
+    :class="[`tier-${tier}`, { 'compact-question': data.compactQuestion }]"
+    :style="containerStyle"
+  >
     <Handle v-if="data.acceptsTarget" type="target" :position="targetPosition" class="grp-handle" />
     <div class="grp-header" :style="headerStyle">
       <span v-if="data.num" class="grp-num">{{ data.num }}</span>
@@ -15,15 +19,18 @@ import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 const props = defineProps(['data'])
 const tier = computed(() => props.data?.tier || 'col')
+const compactQuestion = computed(() => !!props.data?.compactQuestion)
 const targetPosition = computed(() => {
   const pos = props.data?.targetPosition
   return pos === 'top' ? Position.Top : Position.Left
 })
 const containerStyle = computed(() => {
+  if (compactQuestion.value) return {}
   if (tier.value === 'subtle') return {}
   return { borderColor: props.data.color }
 })
 const headerStyle = computed(() => {
+  if (compactQuestion.value) return {}
   if (tier.value === 'subtle') return {}
   if (tier.value === 'sub') return { color: props.data.color }
   return { background: props.data.color }
@@ -108,5 +115,23 @@ const headerStyle = computed(() => {
   letter-spacing: 0.07em;
   text-transform: uppercase;
   background: transparent;
+}
+
+.compact-question {
+  border: 1px solid #dbe4ee;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+.compact-question .grp-header {
+  align-items: flex-start;
+  padding: 6px 7px 3px;
+  color: #334155;
+  background: #ffffff;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: none;
 }
 </style>

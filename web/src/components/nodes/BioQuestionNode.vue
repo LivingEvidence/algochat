@@ -52,10 +52,11 @@ const emit = defineEmits(['choose'])
 }
 .choices {
   display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 .choice {
-  flex: 1;
+  width: 100%;
   height: 32px;
   display: inline-flex;
   align-items: center;

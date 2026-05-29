@@ -182,7 +182,7 @@ export function buildTriColumnNodes() {
 
   // ────────── Width plan ──────────
   const G1_W = 200
-  const G3_W = 240
+  const G3_W = 260
 
   const COL2_W = 280            // shared width for col-2 cards
   const BIO_W  = COL2_W         // BioMarker Assessment outer

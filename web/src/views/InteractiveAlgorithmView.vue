@@ -400,6 +400,11 @@ function onNodeClick({ node }) {
   }
   if (node.type === 'treatNode') {
     if (node.id === 'n3-cabazi' && !matchedTreatIds.value.has(node.id)) return
+    if (
+      node.id === 'n3-docetaxel'
+      && selectedCondIds.value.has('n2-doc-yes')
+      && !matchedTreatIds.value.has(node.id)
+    ) return
     interactiveStore.selectTreatment(node.id)
     refitFlowchart()
   }
