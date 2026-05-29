@@ -250,6 +250,15 @@
         <ul v-if="panelContent.points" class="evidence-points">
           <li v-for="(point, i) in panelContent.points" :key="i">{{ point }}</li>
         </ul>
+        <div
+          v-if="panelContent.pathwayNotes && panelContent.pathwayNotes.length"
+          class="evidence-pathways"
+        >
+          <p v-for="(note, i) in panelContent.pathwayNotes" :key="i" class="pathway-note">
+            This treatment option is suggested in the guideline {{ note.text }}
+            (<a :href="note.link" target="_blank" rel="noopener noreferrer">link to the guideline</a>).
+          </p>
+        </div>
       </div>
     </aside>
   </div>
@@ -285,6 +294,8 @@ import {
   BIOMARKER_INFO_BY_ID,
   SPECIAL_INFO,
   SPECIAL_INFO_BY_ID,
+  TREATMENT_INFO,
+  pathwayNoteFor,
   NON_RECOMMENDING_COND_IDS,
 } from '../data/interactiveAlgorithm.js'
 import {
@@ -358,6 +369,28 @@ const nodeInfoContent = computed(() => {
   return info && { ...info, dotClass: 'cat-special', ariaLabel: 'Special situation information' }
 })
 
+// Pathway notes for the selected treatment: the selected biomarker / special
+// situations that drive this recommendation under the current prior, each
+// resolved to its guideline reference.
+const matchedPathwayNotes = computed(() => {
+  const tid = selectedTreatmentId.value
+  const prior = selectedPrior.value
+  if (!tid || !prior) return []
+  const seen = new Set()
+  const notes = []
+  ;(EDGE_RULES[prior] || []).forEach(rule => {
+    if (rule.to !== tid) return
+    if (!selectedCondIds.value.has(rule.from)) return
+    if (NON_RECOMMENDING_COND_IDS.has(rule.from)) return
+    if (seen.has(rule.from)) return
+    const note = pathwayNoteFor(prior, rule.from)
+    if (!note) return
+    seen.add(rule.from)
+    notes.push(note)
+  })
+  return notes
+})
+
 // ── Right panel content (treatment evidence OR node testing/situation info) ──
 const panelContent = computed(() => {
   if (selectedTreatment.value) {
@@ -367,9 +400,11 @@ const panelContent = computed(() => {
       summary: treatmentCategoryLabel.value,
       dotClass: `cat-${selectedTreatment.value.cat}`,
       paragraphs: [
-        'Evidence content for this treatment option will be shown here after the supporting data model is finalized.',
+        TREATMENT_INFO[selectedTreatment.value.id]
+          || 'Evidence content for this treatment option will be shown here after the supporting data model is finalized.',
       ],
       points: null,
+      pathwayNotes: matchedPathwayNotes.value,
     }
   }
   const info = nodeInfoContent.value
@@ -1086,6 +1121,33 @@ const computedEdges = computed(() => {
   color: #475569;
   font-size: 13px;
   line-height: 1.55;
+}
+
+.evidence-pathways {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pathway-note {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.pathway-note a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.pathway-note a:hover {
+  color: #1d4ed8;
 }
 
 @media (max-width: 900px) {

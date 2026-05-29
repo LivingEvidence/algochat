@@ -243,6 +243,77 @@ export const SPECIAL_INFO_BY_ID = {
   [DOCETAXEL_TAKEN_NO_ID]: 'docetaxelTaken',
 }
 
+// Living-guideline page opened from a treatment's pathway note.
+export const GUIDELINE_URL =
+  'https://staging.lisr.org/living-guidelines/52?projectId=52&guidelineId=2&title=mCRPC%20Guideline&projectName=52&versionId=20'
+
+// General evidence summary shown for each treatment option in the right panel.
+export const TREATMENT_INFO = {
+  'n3-rt-surgery':  'Local therapy — radiation or surgery directed at a limited number of disease sites, generally alongside continued systemic treatment.',
+  'n3-sipuleucel':  'Sipuleucel-T is an autologous cellular immunotherapy option for asymptomatic or minimally symptomatic disease.',
+  'n3-ra223':       'Radium-223 is a bone-seeking radiopharmaceutical for symptomatic bone metastases without visceral disease.',
+  'n3-docetaxel':   'Docetaxel is a taxane chemotherapy and a standard systemic option in mCRPC.',
+  'n3-cabazi':      'Cabazitaxel is a taxane chemotherapy, typically used after prior docetaxel.',
+  'n3-talazo-enza': 'Talazoparib (a PARP inhibitor) combined with enzalutamide (an AR pathway inhibitor) for HRR-altered disease.',
+  'n3-olapa-abi':   'Olaparib (a PARP inhibitor) combined with abiraterone plus prednisone (an AR pathway inhibitor regimen).',
+  'n3-nira-abi':    'Niraparib (a PARP inhibitor) combined with abiraterone plus prednisone (an AR pathway inhibitor regimen).',
+  'n3-olaparib':    'Olaparib is a PARP inhibitor used as monotherapy in HRR-altered disease.',
+  'n3-abi-pred':    'Abiraterone acetate plus prednisone is an AR pathway inhibitor regimen.',
+  'n3-enza':        'Enzalutamide is an AR pathway inhibitor.',
+  'n3-ra223-enza':  'Radium-223 combined with enzalutamide, pairing a bone-targeted radiopharmaceutical with an AR pathway inhibitor.',
+  'n3-lu-psma':     '¹⁷⁷Lu-PSMA-617 is a PSMA-targeted radioligand therapy for PSMA-positive disease.',
+  'n3-pembro':      'Pembrolizumab is an immune checkpoint inhibitor for MSI-H / dMMR disease.',
+}
+
+// Population label per biomarker / special situation (prior-independent).
+// Used to phrase a treatment's pathway note.
+const PATHWAY_POPULATION = {
+  'n2-brca':          'Patients with BRCA1/2 alterations',
+  'n2-non-brca':      'Patients with non-BRCA HRR alterations',
+  'n2-hrr-pos':       'Patients with HRR alterations',
+  'n2-psma-pos':      'Patients with PSMA-positive disease',
+  'n2-msi-present':   'Patients with MSI-H / dMMR disease',
+  'n2-oligo':         'Patients with oligometastatic disease',
+  'n2-indolent':      'Patients with indolent disease',
+  'n2-bone':          'Patients with symptomatic bone-predominant disease',
+  'n2-doc-no':        'Patients ineligible for docetaxel',
+  'n2-caba-yes':      'Patients eligible for cabazitaxel',
+  [DOCETAXEL_TAKEN_YES_ID]: 'Patients with prior docetaxel exposure',
+  [DOCETAXEL_TAKEN_NO_ID]:  'Patients without prior docetaxel exposure',
+}
+
+// Guideline question number per (prior treatment → condition). The number
+// changes with the prior even for the same biomarker — e.g. BRCA1/2 maps to
+// 1.1 after ADT only but 3.1 after ADT + Docetaxel. Only those two are
+// confirmed; fill in the remaining cells as the guideline numbering is
+// finalized. A condition with no number here renders a population-only note.
+const PATHWAY_QUESTION = {
+  'n1-adt':          { 
+    'n2-brca': '1.1', 
+    'n2-non-brca': '1.2',
+    'n2-bone': '1.4',
+    'n2-msi-present': '1.5',
+    'n2-indolent': '1.6',
+    'n2-oligo': '1.7',
+  },
+  'n1-adt-doc':      { 'n2-brca': '3.1', 'n2-non-brca': '3.2' },
+  'n1-adt-arpi':     { 'n2-hrr-pos': '2.1 and 2.2' },
+  'n1-adt-arpi-doc': {},
+}
+
+// Resolve the pathway note for a (prior, condition) pair. Returns the phrase
+// that follows "...suggested in the guideline " plus the outbound link, or
+// null when the condition has no associated population.
+export function pathwayNoteFor(prior, condId) {
+  const population = PATHWAY_POPULATION[condId]
+  if (!population) return null
+  const question = PATHWAY_QUESTION[prior]?.[condId]
+  const text = question
+    ? `question ${question} — ${population}`
+    : `for ${population[0].toLowerCase()}${population.slice(1)}`
+  return { text, link: GUIDELINE_URL }
+}
+
 // ── Geometry helpers ─────────────────────────────────────────────
 
 function subGroupHeight(sg) {
