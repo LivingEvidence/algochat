@@ -35,11 +35,6 @@ const baseUrl = import.meta.env.BASE_URL
 
 const primaryTabs = [
   {
-    name: 'all-pathways',
-    label: 'All Pathways',
-    icon: 'M4.5 3.5a2 2 0 1 1 2 2h-.75v2.2c0 .44.36.8.8.8h6.9a2.8 2.8 0 0 1 2.8 2.8v3.2h.75a2 2 0 1 1-2 0v-3.2c0-.44-.36-.8-.8-.8h-3.45v4h.75a2 2 0 1 1-2 0v-4H6.55a2.8 2.8 0 0 1-2.8-2.8V5.5H3a2 2 0 0 1 1.5-2z',
-  },
-  {
     name: 'interactive-algorithm',
     label: 'Interactive Algorithm',
     icon: 'M10 2.5a7.5 7.5 0 1 0 7.5 7.5h-2a5.5 5.5 0 1 1-5.5-5.5v-2zM11 3.5v5.5h5.5A5.5 5.5 0 0 0 11 3.5z',
