@@ -13,12 +13,12 @@ export const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'all-pathways',
-      component: TriColumnView,
+      redirect: '/interactive-algorithm',
     },
     {
       path: '/all-pathways',
-      redirect: '/',
+      name: 'all-pathways',
+      component: TriColumnView,
     },
     {
       path: '/interactive-algorithm',
